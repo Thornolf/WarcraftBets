@@ -11,14 +11,22 @@ globals = {
 }
 
 read_globals = {
+    "Auctionator",
+    "C_MerchantFrame",
     "CreateFrame",
     "DEFAULT_CHAT_FRAME",
     "GetLocale",
+    "GetMerchantItemID",
+    "GetMerchantItemInfo",
+    "GetMerchantNumItems",
+    "TSM_API",
 }
 
+-- The specs replace the game API with fakes, so they write what the add-on only reads.
 files["spec"] = {
     std = "+busted",
-    globals = { "CreateFrame", "DEFAULT_CHAT_FRAME", "GetLocale" },
+    allow_defined_top = true,
+    ignore = { "121", "122", "131" },
 }
 
 files["Data/Recipes.lua"] = {
