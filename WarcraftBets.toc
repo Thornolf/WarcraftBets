@@ -1,0 +1,12 @@
+## Interface: 16001
+## Title: WarcraftBets
+## Notes: Every craft an item is used in, learned or not, with auction house profit.
+## Notes-frFR: Tous les crafts qui utilisent un objet, appris ou non, avec le profit à l'hôtel des ventes.
+## Author: Thornolf
+## Version: 1.0.0
+## SavedVariables: WarcraftBetsDB
+## OptionalDeps: TradeSkillMaster, Auctionator
+
+Locales/enUS.lua
+Locales/frFR.lua
+Core.lua
