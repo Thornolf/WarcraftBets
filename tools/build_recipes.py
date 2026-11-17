@@ -96,9 +96,10 @@ def build(cache):
             amount = max(1, round(float(effect["EffectBasePointsF"])))
             products.setdefault(effect["SpellID"], (effect["EffectItemType"], amount))
 
+    skill_lines = read(cache, "SkillLine")
     professions = {
         row["ID"]: row["DisplayName_lang"]
-        for row in read(cache, "SkillLine")
+        for row in skill_lines
         if row["CategoryID"] in PROFESSION_CATEGORIES
         and row["ParentSkillLineID"] == "0"
         and not JUNK_NAME.search(row["DisplayName_lang"])
@@ -137,6 +138,13 @@ def build(cache):
 
     used_skills = {recipe[0] for recipe in recipes.values()}
     skills = {int(key): name for key, name in professions.items() if int(key) in used_skills}
+    # The client tracks a profession's rank on a child skill line, while recipes
+    # reference the parent.
+    child_skills = {
+        int(row["ID"]): int(row["ParentSkillLineID"])
+        for row in skill_lines
+        if int(row["ParentSkillLineID"]) in skills
+    }
 
     vendor = {}
     for item in VENDOR_ITEMS:
@@ -153,10 +161,10 @@ def build(cache):
         }
     )
     print(f"{len(recipes)} recipes, {skipped} skipped, {len(skills)} professions", file=sys.stderr)
-    return skills, recipes, vendor, unsellable
+    return skills, child_skills, recipes, vendor, unsellable
 
 
-def render(build_name, skills, recipes, vendor, unsellable):
+def render(build_name, skills, child_skills, recipes, vendor, unsellable):
     out = [
         "local _, ns = ...",
         "",
@@ -169,6 +177,9 @@ def render(build_name, skills, recipes, vendor, unsellable):
     ]
     for key in sorted(skills):
         out.append(f'        [{key}] = "{skills[key]}",')
+    out += ["    },", "    childSkills = {"]
+    for key in sorted(child_skills):
+        out.append(f"        [{key}] = {child_skills[key]},")
     out += ["    },", "    recipes = {"]
     for spell in sorted(recipes):
         out.append(f"        [{spell}] = {{ {', '.join(str(v) for v in recipes[spell])} }},")

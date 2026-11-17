@@ -63,7 +63,7 @@ describe("tooltip hook", function()
 
     it("rebuilds the tooltip when Shift changes, without moving the mouse", function()
         local refreshed = 0
-        function GameTooltip:RefreshData()
+        function GameTooltip:RebuildFromTooltipInfo()
             refreshed = refreshed + 1
         end
         game:Fire("MODIFIER_STATE_CHANGED", "LSHIFT", 1)
@@ -78,7 +78,17 @@ describe("tooltip hook", function()
         assert.are.equal(1, refreshed)
     end)
 
-    it("re-enters the hovered frame on a client without RefreshData", function()
+    it("uses RefreshData on a client that names the rebuild that way", function()
+        local refreshed = 0
+        function GameTooltip:RefreshData()
+            refreshed = refreshed + 1
+        end
+        hover(GameTooltip, items.ORE)
+        game:Fire("MODIFIER_STATE_CHANGED", "LSHIFT", 1)
+        assert.are.equal(1, refreshed)
+    end)
+
+    it("re-enters the hovered frame on a client without a rebuild method", function()
         local entered = 0
         local owner = {
             GetScript = function()

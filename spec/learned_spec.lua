@@ -119,6 +119,41 @@ describe("learned recipes", function()
         assert.is_false(Learned.Status(index.byId[SMELT_COPPER]).known)
     end)
 
+    it("reads the rank from the child skill line the client keeps it on", function()
+        local CHILD_BLACKSMITHING = 2938
+        assert.are.equal(BLACKSMITHING, ns.RecipeData.childSkills[CHILD_BLACKSMITHING])
+        ranks[CHILD_BLACKSMITHING] = 90
+        login("Thrall")
+        assert.are.equal(90, ns.db.chars["Sulfuron-Thrall"].skills[BLACKSMITHING])
+        assert.is_true(Learned.Status(index.byId[COPPER_CHAIN_VEST]).learnable)
+    end)
+
+    it("reads the filtered list when the client has no full recipe list", function()
+        ranks[MINING] = 80
+        _G.C_TradeSkillUI.GetFilteredRecipeIDs = function()
+            return { SMELT_BRONZE }
+        end
+        _G.C_TradeSkillUI.GetRecipeInfo = function(spell)
+            return { learned = spell == SMELT_BRONZE }
+        end
+        game:Fire("TRADE_SKILL_SHOW")
+        game:RunTimers()
+        assert.is_true(Learned.Status(index.byId[SMELT_BRONZE]).known)
+    end)
+
+    it("asks the client about each recipe of the character's professions", function()
+        ranks[MINING] = 80
+        local asked = {}
+        _G.C_TradeSkillUI.GetRecipeInfo = function(spell)
+            asked[spell] = true
+            return { learned = spell == SMELT_COPPER }
+        end
+        login("Thrall")
+        assert.is_true(Learned.Status(index.byId[SMELT_COPPER]).known)
+        assert.is_false(Learned.Status(index.byId[SMELT_BRONZE]).known)
+        assert.is_nil(asked[COPPER_CHAIN_BELT])
+    end)
+
     it("reads recipe links and skill lines on an older client", function()
         _G.C_TradeSkillUI = nil
         _G.GetNumSkillLines = function()

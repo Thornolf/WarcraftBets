@@ -54,6 +54,7 @@ function fixture.data()
             [recipes.ENCHANT] = { fixture.ENCHANTING, 30, 60, 0, 0, 1, items.BAR, 1 },
             [recipes.MYSTERY] = { smithing, 30, 60, 0, items.MYSTERY, 1, items.BAR, 1 },
         },
+        childSkills = { [2938] = smithing },
         vendor = {},
         unsellable = { items.BADGE },
     }

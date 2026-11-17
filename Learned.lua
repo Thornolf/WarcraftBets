@@ -35,11 +35,20 @@ local function readSkills()
     local skills = {}
     local bySkillLine = C_TradeSkillUI and C_TradeSkillUI.GetProfessionInfoBySkillLineID
     if bySkillLine then
-        for skill in pairs(ns.RecipeData.skills) do
-            local info = bySkillLine(skill)
-            if info and (info.skillLevel or 0) > 0 then
-                skills[skill] = info.skillLevel
+        local function read(skillLine, profession)
+            local info = bySkillLine(skillLine)
+            local level = info and info.skillLevel or 0
+            if level > (skills[profession] or 0) then
+                skills[profession] = level
             end
+        end
+        for skill in pairs(ns.RecipeData.skills) do
+            read(skill, skill)
+        end
+        -- Recipes reference a profession's parent skill line, but the client
+        -- keeps the rank on a child line.
+        for child, parent in pairs(ns.RecipeData.childSkills) do
+            read(child, parent)
         end
     end
     if GetProfessions and GetProfessionInfo then
@@ -65,6 +74,14 @@ local function readSkills()
     return skills
 end
 
+-- Newer clients answer for any recipe of a profession the character has,
+-- without its window being open.
+local function recipeIsLearned(spell)
+    local recipeInfo = C_TradeSkillUI and C_TradeSkillUI.GetRecipeInfo
+    local info = recipeInfo and recipeInfo(spell)
+    return info ~= nil and info.learned == true
+end
+
 local function spellFromLink(link)
     return link and tonumber(link:match("enchant:(%d+)"))
 end
@@ -74,8 +91,9 @@ end
 -- removes from it.
 local function readOpenWindow(known)
     local api = C_TradeSkillUI
-    if api and api.GetAllRecipeIDs and api.GetRecipeInfo then
-        for _, spell in ipairs(api.GetAllRecipeIDs() or {}) do
+    local listRecipes = api and (api.GetAllRecipeIDs or api.GetFilteredRecipeIDs)
+    if listRecipes and api.GetRecipeInfo then
+        for _, spell in ipairs(listRecipes() or {}) do
             local info = api.GetRecipeInfo(spell)
             if info and info.learned then
                 known[spell] = true
@@ -128,7 +146,7 @@ function Learned.Scan()
     -- profession was dropped.
     local ranksRead = next(skills) ~= nil
     for spell, raw in pairs(ns.RecipeData.recipes) do
-        if spellIsKnown(spell) then
+        if spellIsKnown(spell) or (skills[raw[1]] and recipeIsLearned(spell)) then
             known[spell] = true
         end
         if ranksRead and known[spell] and not skills[raw[1]] then

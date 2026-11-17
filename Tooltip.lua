@@ -58,8 +58,10 @@ ns:On("MODIFIER_STATE_CHANGED", function(key)
     if not (blockShown and key and key:find("SHIFT")) or not GameTooltip:IsShown() then
         return
     end
-    if GameTooltip.RefreshData then
-        GameTooltip:RefreshData()
+    -- The name of the rebuild method changed between client generations.
+    local rebuild = GameTooltip.RebuildFromTooltipInfo or GameTooltip.RefreshData
+    if rebuild then
+        rebuild(GameTooltip)
         return
     end
     local owner = GameTooltip:GetOwner()

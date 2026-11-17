@@ -404,6 +404,18 @@ describe("window", function()
             assert.are.same({ "Copper Ore" }, lists[1].terms)
         end)
 
+        it("falls back to plain names when Auctionator cannot build a search term", function()
+            installAuctionator({
+                ConvertToSearchString = function()
+                    error("unsupported")
+                end,
+            })
+            slash("Copper Ore")
+            rowNamed("Copper Chain Belt"):Run("OnClick", "LeftButton")
+            widgets().detail.shopButton:Run("OnClick")
+            assert.are.same({ "Copper Ore" }, lists[1].terms)
+        end)
+
         it("says when Auctionator refuses the list", function()
             installAuctionator({
                 CreateShoppingList = function()

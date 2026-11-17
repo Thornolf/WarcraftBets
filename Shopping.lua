@@ -10,6 +10,19 @@ local function api()
     return v1 and v1.CreateShoppingList and v1 or nil
 end
 
+-- An exact-name term with a quantity when this Auctionator can build one,
+-- else the bare name, which Auctionator also accepts.
+local function searchTerm(auctionator, name, count)
+    if auctionator.ConvertToSearchString then
+        local term = { searchString = name, isExact = true, quantity = count }
+        local ok, text = pcall(auctionator.ConvertToSearchString, CALLER_ID, term)
+        if ok and type(text) == "string" then
+            return text
+        end
+    end
+    return name
+end
+
 --- Whether Auctionator is loaded and can take a shopping list.
 function Shopping.IsAvailable()
     return api() ~= nil
@@ -22,11 +35,8 @@ function Shopping.Create(use)
     local terms = {}
     for _, purchase in ipairs(ns.Analysis.Engine():Purchases(use.recipe)) do
         local name = ns.Compat.ItemName(purchase.item)
-        if name and auctionator.ConvertToSearchString then
-            local term = { searchString = name, isExact = true, quantity = purchase.count }
-            table.insert(terms, auctionator.ConvertToSearchString(CALLER_ID, term))
-        elseif name then
-            table.insert(terms, name)
+        if name then
+            table.insert(terms, searchTerm(auctionator, name, purchase.count))
         end
     end
     if #terms == 0 then
