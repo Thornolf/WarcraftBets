@@ -16,6 +16,13 @@ describe("locales", function()
         end
     end)
 
+    it("name every profession of the recipe data", function()
+        local data = helpers.newGame():Load("Data/Recipes.lua").RecipeData
+        for skill in pairs(data.skills) do
+            assert.is_string(locales.enUS["PROFESSION_" .. skill], "no name for profession " .. skill)
+        end
+    end)
+
     it("keep the same format placeholders in both languages", function()
         local function placeholders(text)
             local found = {}

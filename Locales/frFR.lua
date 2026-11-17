@@ -8,4 +8,21 @@ ns.locales.frFR = {
     HELP_ITEM = "/wsb <lien ou nom d'objet> : ouvre la fenêtre sur cet objet",
     HELP_OPTIONS = "/wsb options : ouvre les réglages",
     HELP_RESET = "/wsb reset : remet la fenêtre au centre",
+
+    -- Used when the client cannot name a profession itself.
+    PROFESSION_40 = "Poisons",
+    PROFESSION_129 = "Secourisme",
+    PROFESSION_142 = "Survie",
+    PROFESSION_164 = "Forge",
+    PROFESSION_165 = "Travail du cuir",
+    PROFESSION_171 = "Alchimie",
+    PROFESSION_182 = "Herboristerie",
+    PROFESSION_185 = "Cuisine",
+    PROFESSION_186 = "Minage",
+    PROFESSION_197 = "Couture",
+    PROFESSION_202 = "Ingénierie",
+    PROFESSION_333 = "Enchantement",
+    PROFESSION_356 = "Pêche",
+    PROFESSION_393 = "Dépeçage",
+    PROFESSION_3012 = "Compréhension",
 }

@@ -13,13 +13,28 @@ globals = {
 read_globals = {
     "Auctionator",
     "C_MerchantFrame",
+    "C_SpellBook",
+    "C_Timer",
+    "C_TradeSkillUI",
     "CreateFrame",
     "DEFAULT_CHAT_FRAME",
+    "GetCraftItemLink",
     "GetLocale",
     "GetMerchantItemID",
     "GetMerchantItemInfo",
     "GetMerchantNumItems",
+    "GetNumCrafts",
+    "GetNumSkillLines",
+    "GetNumTradeSkills",
+    "GetProfessionInfo",
+    "GetProfessions",
+    "GetRealmName",
+    "GetSkillLineInfo",
+    "GetTradeSkillRecipeLink",
+    "IsPlayerSpell",
+    "IsSpellKnown",
     "TSM_API",
+    "UnitName",
 }
 
 -- The specs replace the game API with fakes, so they write what the add-on only reads.

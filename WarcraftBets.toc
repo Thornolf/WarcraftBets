@@ -13,3 +13,4 @@ Core.lua
 Data/Recipes.lua
 Recipes.lua
 Prices.lua
+Learned.lua

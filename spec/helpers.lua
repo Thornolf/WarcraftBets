@@ -23,7 +23,7 @@ end
 
 --- Resets the fake game globals and returns a fresh add-on namespace.
 function helpers.newGame(locale)
-    local game = { frames = {}, chat = {} }
+    local game = { frames = {}, chat = {}, timers = {}, character = "Thrall" }
     _G.WarcraftBetsDB = nil
     _G.SlashCmdList = {}
     _G.GetLocale = function()
@@ -39,7 +39,26 @@ function helpers.newGame(locale)
             table.insert(game.chat, text)
         end,
     }
+    _G.UnitName = function()
+        return game.character
+    end
+    _G.GetRealmName = function()
+        return "Sulfuron"
+    end
+    _G.C_Timer = {
+        After = function(_, fn)
+            table.insert(game.timers, fn)
+        end,
+    }
     game.ns = {}
+    --- Runs every pending timer, as if their delay had elapsed.
+    function game:RunTimers()
+        local due = self.timers
+        self.timers = {}
+        for _, fn in ipairs(due) do
+            fn()
+        end
+    end
     --- Sends a game event to every frame the add-on created.
     function game:Fire(event, ...)
         for _, frame in ipairs(self.frames) do
