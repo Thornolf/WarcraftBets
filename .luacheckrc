@@ -18,6 +18,9 @@ read_globals = {
     "C_SpellBook",
     "C_Timer",
     "C_TradeSkillUI",
+    "ChatEdit_InsertLink",
+    "ChatFrameUtil",
+    "ChatFrame_OpenChat",
     "CreateFrame",
     "DEFAULT_CHAT_FRAME",
     "Enum",
@@ -43,10 +46,12 @@ read_globals = {
     "GetTradeSkillRecipeLink",
     "ITEM_QUALITY_COLORS",
     "InCombatLockdown",
+    "InterfaceOptions_AddCategory",
     "IsPlayerSpell",
     "IsShiftKeyDown",
     "IsSpellKnown",
     "ItemRefTooltip",
+    "Settings",
     "TSM_API",
     "TooltipDataProcessor",
     "UIParent",
@@ -60,7 +65,7 @@ files["spec"] = {
     allow_defined_top = true,
     max_line_length = 130,
     ignore = { "121", "122", "131" },
-    read_globals = { "WarcraftBetsFrame" },
+    read_globals = { "WarcraftBetsFrame", "WarcraftBetsSettingsFrame" },
 }
 
 files["Data/Recipes.lua"] = {

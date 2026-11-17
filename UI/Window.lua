@@ -336,6 +336,22 @@ local function buildDetail(parent, widgets)
     detail.source = label(detail, "GameFontHighlightSmall")
     detail.source:SetPoint("TOPLEFT", sourceTitle, "BOTTOMLEFT", 0, -4)
     detail.source:SetPoint("RIGHT", detail, "RIGHT", 0, 0)
+
+    detail.linkButton = ns.Compat.CreateFrame("Button", nil, detail, "UIPanelButtonTemplate")
+    detail.linkButton:SetSize(140, 22)
+    detail.linkButton:SetPoint("BOTTOMRIGHT", detail, "BOTTOMRIGHT", 0, 0)
+    detail.linkButton:SetText(ns.L.BUTTON_LINK)
+    detail.linkButton:SetScript("OnClick", function()
+        ns.Compat.InsertInChat(ns.View.ChatText(detail.use))
+    end)
+
+    detail.shopButton = ns.Compat.CreateFrame("Button", nil, detail, "UIPanelButtonTemplate")
+    detail.shopButton:SetSize(140, 22)
+    detail.shopButton:SetPoint("RIGHT", detail.linkButton, "LEFT", -8, 0)
+    detail.shopButton:SetText(ns.L.BUTTON_SHOP)
+    detail.shopButton:SetScript("OnClick", function()
+        ns.Shopping.Create(detail.use)
+    end)
 end
 
 local function build()
@@ -488,6 +504,8 @@ local function drawDetail(widgets, selectedRow)
     end
 
     detail.source:SetText(ns.View.PriceSourceText())
+    detail.use = use
+    detail.shopButton:SetShown(ns.Shopping.IsAvailable())
 end
 
 --- Redraws the window from the current item, search, filter and selection.

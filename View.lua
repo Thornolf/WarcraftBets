@@ -261,3 +261,18 @@ function View.PriceSourceText()
     end
     return table.concat(available, L.SOURCE_THEN)
 end
+
+--- One chat line for a craft: its link, then cost, sale price and profit in
+--- plain text, since chat cannot show coin icons.
+function View.ChatText(use)
+    local L, Money = ns.L, ns.Money
+    local recipe = use.recipe
+    local subject = recipe.product and ns.Compat.ItemLink(recipe.product) or View.RecipeName(recipe)
+    local function amount(copper)
+        return copper and Money.Text(copper) or L.UNKNOWN_PRICE
+    end
+    if not use.sellable then
+        return L.CHAT_COST_ONLY:format(subject, amount(use.cost))
+    end
+    return L.CHAT_PROFIT:format(subject, amount(use.cost), amount(use.revenue), amount(use.profit))
+end

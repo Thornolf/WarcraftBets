@@ -90,7 +90,9 @@ Panneau gauche, la liste des crafts :
 
 - Champ de recherche sur le nom de l'objet produit.
 - Filtre : Toutes / Apprises (ce perso) / Apprises (un reroll) / Non apprises / Apprenables
-  maintenant.
+  maintenant. Le bouton passe à la valeur suivante à chaque clic, à la précédente au clic droit.
+  « Apprenable » utilise la compétence exigée quand les tables du client la donnent (recettes
+  enseignées par un objet), sinon le seuil jaune de la recette.
 - Groupes par étape : « Directement », « Avec <objet intermédiaire> », puis « Non vendables ».
 - Chaque ligne : icône, nom (couleur de qualité si apprise, gris et icône désaturée sinon), profit
   par unité en vert ou rouge.
@@ -103,7 +105,9 @@ Panneau droit, le détail de la recette sélectionnée :
 - Rentabilité : prix de vente HV, commission, coût, profit net par craft et par unité.
 - Source des prix.
 - Boutons « Lier dans le chat » et « Liste d'achat » (ce dernier seulement si Auctionator est
-  chargé).
+  chargé). La liste contient ce qu'il faut acheter à l'HV en suivant le chemin le moins cher : un
+  composant fabriqué est remplacé par ses propres composants, les objets de marchand sont laissés
+  de côté.
 
 Comportement :
 
@@ -160,6 +164,10 @@ prix, sinon Auctionator.
 | Crafts dans l'infobulle | Par défaut / avec Maj | 2 / 5 |
 | Infobulle activée | Oui / non | Oui |
 
+Les réglages s'ouvrent dans leur propre fenêtre native avec `/wsb options`. Les options du jeu
+contiennent une entrée WarcraftBets avec un bouton qui ouvre cette fenêtre : l'API des options change
+d'une génération du client à l'autre, la fenêtre fonctionne partout.
+
 - `/wsb` ou `/wb` : ouvre ou ferme la fenêtre.
 - `/wsb <lien ou nom d'objet>` : ouvre la fenêtre sur cet objet.
 - `/wsb options` : ouvre les réglages.
@@ -182,6 +190,7 @@ Seul le moteur fait les calculs ; l'infobulle et la fenêtre affichent ce qu'il 
 | `Engine.lua` | Coût le moins cher, profit, chaînes |
 | `Analysis.lua` | Moteur partagé par les vues, reconstruit quand prix ou réglages changent |
 | `View.lua` | Lignes de l'infobulle et de la liste, sans cadre |
+| `Shopping.lua` | Liste de courses Auctionator |
 | `Tooltip.lua` | Accroche de l'infobulle |
 | `UI/Window.lua` | Fenêtre à deux panneaux |
 | `UI/Settings.lua` | Panneau de réglages |

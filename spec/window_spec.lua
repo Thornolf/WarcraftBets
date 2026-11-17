@@ -311,6 +311,120 @@ describe("window", function()
         end)
     end)
 
+    describe("link in chat button", function()
+        before_each(function()
+            slash("Copper Ore")
+            rowNamed("Copper Chain Belt"):Run("OnClick", "LeftButton")
+        end)
+
+        it("opens the chat box with the item link, cost, sale price and profit", function()
+            widgets().detail.linkButton:Run("OnClick")
+            assert.are.same(
+                { "|Hitem:3|h[Copper Chain Belt]|h: cost 36s, sells for 1g 20s, profit 78s" },
+                game.chatBox
+            )
+        end)
+
+        it("inserts into a chat box that is already open", function()
+            game.chatBoxOpen = true
+            widgets().detail.linkButton:Run("OnClick")
+            assert.are.equal(1, #game.chatBox)
+        end)
+
+        it("links only the cost of an unsellable craft", function()
+            rowNamed("Copper Badge"):Run("OnClick", "LeftButton")
+            widgets().detail.linkButton:Run("OnClick")
+            assert.are.same({ "|Hitem:9|h[Copper Badge]|h: cost 12s" }, game.chatBox)
+        end)
+
+        it("names the spell of a craft that makes no item", function()
+            rowNamed("Enchant Bracer"):Run("OnClick", "LeftButton")
+            widgets().detail.linkButton:Run("OnClick")
+            assert.are.same({ "Enchant Bracer: cost 6s" }, game.chatBox)
+        end)
+
+        it("writes question marks for missing prices", function()
+            rowNamed("Mystery Box"):Run("OnClick", "LeftButton")
+            widgets().detail.linkButton:Run("OnClick")
+            assert.are.same({ "|Hitem:10|h[Mystery Box]|h: cost 6s, sells for ?, profit ?" }, game.chatBox)
+        end)
+
+        it("uses the newer chat API when the client has it", function()
+            local inserted
+            _G.ChatFrameUtil = {
+                InsertLink = function(text)
+                    inserted = text
+                    return true
+                end,
+            }
+            widgets().detail.linkButton:Run("OnClick")
+            assert.is_truthy(inserted:find("profit 78s", 1, true))
+            assert.are.same({}, game.chatBox)
+        end)
+    end)
+
+    describe("shopping list button", function()
+        local lists
+
+        local function installAuctionator(v1)
+            lists = {}
+            v1.CreateShoppingList = v1.CreateShoppingList
+                or function(caller, name, terms)
+                    table.insert(lists, { caller = caller, name = name, terms = terms })
+                end
+            _G.Auctionator = { API = { v1 = v1 } }
+        end
+
+        it("is hidden without Auctionator", function()
+            slash("Copper Ore")
+            assert.is_false(widgets().detail.shopButton:IsShown())
+        end)
+
+        it("creates a list of what to buy, with exact names and quantities", function()
+            installAuctionator({
+                ConvertToSearchString = function(_, term)
+                    return term.searchString .. ";" .. tostring(term.isExact) .. ";" .. term.quantity
+                end,
+            })
+            slash("Copper Ore")
+            rowNamed("Copper Chain Belt"):Run("OnClick", "LeftButton")
+            assert.is_true(widgets().detail.shopButton:IsShown())
+            widgets().detail.shopButton:Run("OnClick")
+            assert.are.same({
+                { caller = "WarcraftBets", name = "WarcraftBets: Copper Chain Belt", terms = { "Copper Ore;true;6" } },
+            }, lists)
+            assert.is_truthy(game.chat[#game.chat]:find("WarcraftBets: Copper Chain Belt", 1, true))
+        end)
+
+        it("falls back to plain names on an older Auctionator", function()
+            installAuctionator({})
+            slash("Copper Ore")
+            rowNamed("Copper Chain Belt"):Run("OnClick", "LeftButton")
+            widgets().detail.shopButton:Run("OnClick")
+            assert.are.same({ "Copper Ore" }, lists[1].terms)
+        end)
+
+        it("says when Auctionator refuses the list", function()
+            installAuctionator({
+                CreateShoppingList = function()
+                    error("list exists")
+                end,
+            })
+            slash("Copper Ore")
+            widgets().detail.shopButton:Run("OnClick")
+            assert.is_truthy(game.chat[#game.chat]:find("Auctionator refused the shopping list.", 1, true))
+        end)
+
+        it("says when the craft needs nothing from the auction house", function()
+            installAuctionator({})
+            game.itemNames[items.ORE] = nil
+            slash("|Hitem:1|h[x]|h")
+            widgets().detail.shopButton:Run("OnClick")
+            assert.are.same({}, lists)
+            assert.is_truthy(game.chat[#game.chat]:find("Nothing to buy", 1, true))
+        end)
+    end)
+
     describe("price source button", function()
         it("cycles the source and redraws", function()
             slash("Copper Ore")

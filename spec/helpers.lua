@@ -136,6 +136,18 @@ function widgetMethods:SetValue(value)
     end
 end
 
+function widgetMethods:SetChecked(checked)
+    self.checked = checked
+end
+
+function widgetMethods:GetChecked()
+    return self.checked
+end
+
+function widgetMethods:HasFocus()
+    return self.focused == true
+end
+
 function widgetMethods:CreateFontString()
     return newWidget("FontString", self)
 end
@@ -191,6 +203,8 @@ function helpers.newGame(locale)
         ranks = {},
         prices = {},
         missingTemplates = {},
+        chatBox = {},
+        chatBoxOpen = false,
     }
     _G.WarcraftBetsDB = nil
     _G.SlashCmdList = {}
@@ -215,7 +229,19 @@ function helpers.newGame(locale)
     end
     _G.UIParent = newWidget("Frame")
     _G.UISpecialFrames = {}
-    _G.WarcraftBetsFrame = nil
+    _G.WarcraftBetsFrame, _G.WarcraftBetsSettingsFrame = nil, nil
+    _G.Settings, _G.InterfaceOptions_AddCategory, _G.ChatFrameUtil = nil, nil, nil
+    _G.ChatEdit_InsertLink = function(text)
+        if game.chatBoxOpen then
+            table.insert(game.chatBox, text)
+            return true
+        end
+        return false
+    end
+    _G.ChatFrame_OpenChat = function(text)
+        game.chatBoxOpen = true
+        table.insert(game.chatBox, text)
+    end
     _G.DEFAULT_CHAT_FRAME = {
         AddMessage = function(_, text)
             table.insert(game.chat, text)
@@ -250,6 +276,10 @@ function helpers.newGame(locale)
         end,
         GetItemQualityByID = function()
             return 2
+        end,
+        GetItemInfo = function(item)
+            local name = game.itemNames[item]
+            return name, name and ("|Hitem:" .. item .. "|h[" .. name .. "]|h")
         end,
         GetItemInfoInstant = function(text)
             for item, name in pairs(game.itemNames) do

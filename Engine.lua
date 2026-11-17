@@ -171,3 +171,29 @@ function Engine:Uses(item)
     table.sort(uses, bestFirst)
     return uses
 end
+
+--- What to buy at the auction house for one craft, following the cheapest
+--- path: crafted reagents are replaced by their own reagents, vendor goods
+--- are left out. Returns { item, count } in the order first needed.
+function Engine:Purchases(recipe)
+    local purchases, byItem = {}, {}
+    local function need(item, count, level)
+        local entry = self:Cost(item)
+        if entry.source == "craft" and level < self.depth then
+            local crafts = math.ceil(count / entry.recipe.yield)
+            for _, reagent in ipairs(entry.recipe.reagents) do
+                need(reagent.item, reagent.count * crafts, level + 1)
+            end
+        elseif entry.source ~= "vendor" then
+            if not byItem[item] then
+                byItem[item] = { item = item, count = 0 }
+                table.insert(purchases, byItem[item])
+            end
+            byItem[item].count = byItem[item].count + count
+        end
+    end
+    for _, reagent in ipairs(recipe.reagents) do
+        need(reagent.item, reagent.count, 1)
+    end
+    return purchases
+end

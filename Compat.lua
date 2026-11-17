@@ -93,3 +93,21 @@ function Compat.ShowItemTooltip(owner, item)
     end
     GameTooltip:Show()
 end
+
+--- Chat link of an item, or its bracketed name while the link is loading.
+function Compat.ItemLink(item)
+    local info = C_Item and C_Item.GetItemInfo or GetItemInfo
+    local name, link = info(item)
+    return link or ("[" .. (name or Compat.ItemName(item) or item) .. "]")
+end
+
+--- Puts text in the chat edit box: at the cursor if the box is open, else in
+--- a newly opened box.
+function Compat.InsertInChat(text)
+    local insert = ChatFrameUtil and ChatFrameUtil.InsertLink or ChatEdit_InsertLink
+    if insert and insert(text) then
+        return
+    end
+    local open = ChatFrameUtil and ChatFrameUtil.OpenChat or ChatFrame_OpenChat
+    open(text)
+end

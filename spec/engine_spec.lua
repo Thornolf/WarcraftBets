@@ -204,6 +204,43 @@ describe("engine", function()
         end)
     end)
 
+    describe("purchases for a craft", function()
+        local function bought(recipe, options)
+            local out = {}
+            for _, purchase in ipairs(engine(options):Purchases(index.byId[recipe])) do
+                table.insert(out, purchase.item .. "x" .. purchase.count)
+            end
+            return out
+        end
+
+        it("replace a crafted reagent by what it is made of", function()
+            assert.are.same({ ORE .. "x6" }, bought(MAKE_BELT))
+        end)
+
+        it("buy the reagent itself when buying is cheaper", function()
+            prices[BAR] = 500
+            assert.are.same({ BAR .. "x6" }, bought(MAKE_BELT))
+        end)
+
+        it("leave vendor goods out", function()
+            assert.are.same({ ORE .. "x1" }, bought(SEW))
+        end)
+
+        it("round crafts up to whole yields and add up shared materials", function()
+            prices[TIN] = 400
+            assert.are.same({ ORE .. "x2", TIN .. "x2" }, bought(MAKE_AXE))
+        end)
+
+        it("include reagents without a price, to look them up", function()
+            assert.are.same({ ORE .. "x1", TIN .. "x1" }, bought(SMELT_BRONZE))
+        end)
+
+        it("stop descending at the depth limit", function()
+            prices[TIN] = 400
+            assert.are.same({ BRONZE .. "x4" }, bought(MAKE_AXE, { depth = 1 }))
+        end)
+    end)
+
     describe("uses of an item", function()
         it("ranks by profit per unit of the item, not per craft", function()
             prices[TROUSERS] = 3000

@@ -19,5 +19,7 @@ Learned.lua
 Engine.lua
 Analysis.lua
 View.lua
+Shopping.lua
 Tooltip.lua
 UI/Window.lua
+UI/Settings.lua
