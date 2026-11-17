@@ -10,3 +10,5 @@
 Locales/enUS.lua
 Locales/frFR.lua
 Core.lua
+Data/Recipes.lua
+Recipes.lua
