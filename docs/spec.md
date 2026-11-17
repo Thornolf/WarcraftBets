@@ -61,8 +61,9 @@ Le bloc WarcraftBets s'ajoute sous les lignes de Blizzard. Il n'affiche rien en 
 Ordre des lignes (libellé à gauche, prix à droite) :
 
 1. Prix HV de l'objet, avec sa source : « TSM, brut » ou « Auctionator, brut ».
-2. Une ligne par transformation à un seul composant (minerai → barre) : « Transformé (Barre de
-   cuivre) », valeur ramenée à une unité de l'objet survolé.
+2. Une ligne par transformation (minerai → barre) : « Transformé (Barre de cuivre) », valeur ramenée
+   à une unité de l'objet survolé. Une transformation est une recette dont l'objet survolé est le
+   seul composant et dont le produit sert lui-même de composant ailleurs.
 3. Si l'objet se fabrique : « Coût de fabrication » par le chemin le moins cher.
 4. Titre en jaune : « WarcraftBets : meilleurs crafts ».
 5. Les 2 meilleurs crafts (5 avec Maj), classés par profit par unité survolée. Nom en blanc si appris
@@ -174,9 +175,12 @@ Seul le moteur fait les calculs ; l'infobulle et la fenêtre affichent ce qu'il 
 | `Locales/` | Textes français et anglais |
 | `Data/Recipes.lua` | Base de recettes générée |
 | `Compat.lua` | Accès à l'API du jeu, quelle que soit sa génération |
+| `Money.lua` | Affichage des montants en pièces |
+| `Recipes.lua` | Index des recettes par produit et par composant |
 | `Prices.lua` | TSM, Auctionator, marchand |
 | `Learned.lua` | Recettes apprises par personnage |
 | `Engine.lua` | Coût le moins cher, profit, chaînes |
+| `Analysis.lua` | Moteur partagé par les vues, reconstruit quand prix ou réglages changent |
 | `View.lua` | Lignes de l'infobulle et de la liste, sans cadre |
 | `Tooltip.lua` | Accroche de l'infobulle |
 | `UI/Window.lua` | Fenêtre à deux panneaux |

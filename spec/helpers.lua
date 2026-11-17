@@ -21,9 +21,43 @@ local function newFrame()
     return frame
 end
 
+local function newTooltip()
+    local tooltip = { lines = {}, hooks = {}, shown = false }
+    function tooltip:AddLine(text, r, g, b)
+        table.insert(self.lines, { left = text, leftColor = { r, g, b } })
+    end
+    function tooltip:AddDoubleLine(left, right, r, g, b, r2, g2, b2)
+        local line = { left = left, right = right, leftColor = { r, g, b }, rightColor = { r2, g2, b2 } }
+        table.insert(self.lines, line)
+    end
+    function tooltip:Show()
+        self.shown = true
+    end
+    function tooltip:IsShown()
+        return self.shown
+    end
+    function tooltip:HookScript(name, fn)
+        self.hooks[name] = fn
+    end
+    return tooltip
+end
+
 --- Resets the fake game globals and returns a fresh add-on namespace.
 function helpers.newGame(locale)
-    local game = { frames = {}, chat = {}, timers = {}, character = "Thrall" }
+    local game = {
+        frames = {},
+        chat = {},
+        timers = {},
+        character = "Thrall",
+        time = 0,
+        inCombat = false,
+        shift = false,
+        itemNames = {},
+        spellNames = {},
+        knownSpells = {},
+        ranks = {},
+        prices = {},
+    }
     _G.WarcraftBetsDB = nil
     _G.SlashCmdList = {}
     _G.GetLocale = function()
@@ -50,6 +84,42 @@ function helpers.newGame(locale)
             table.insert(game.timers, fn)
         end,
     }
+    _G.GetTime = function()
+        return game.time
+    end
+    _G.InCombatLockdown = function()
+        return game.inCombat
+    end
+    _G.IsShiftKeyDown = function()
+        return game.shift
+    end
+    _G.C_Item = {
+        GetItemNameByID = function(item)
+            return game.itemNames[item]
+        end,
+    }
+    _G.C_Spell = {
+        GetSpellName = function(spell)
+            return game.spellNames[spell]
+        end,
+    }
+    _G.IsPlayerSpell = function(spell)
+        return game.knownSpells[spell] == true
+    end
+    _G.C_TradeSkillUI = {
+        GetProfessionInfoBySkillLineID = function(skill)
+            return { skillLevel = game.ranks[skill] or 0 }
+        end,
+    }
+    _G.TSM_API = {
+        GetCustomPriceValue = function(_, itemString)
+            return game.prices[tonumber(itemString:match("%d+"))]
+        end,
+    }
+    _G.Auctionator, _G.C_MerchantFrame, _G.TooltipDataProcessor, _G.Enum = nil, nil, nil, nil
+    _G.C_SpellBook, _G.IsSpellKnown, _G.GetProfessions, _G.GetNumSkillLines = nil, nil, nil, nil
+    _G.GetNumTradeSkills, _G.GetNumCrafts = nil, nil
+    _G.GameTooltip, _G.ItemRefTooltip = newTooltip(), newTooltip()
     game.ns = {}
     --- Runs every pending timer, as if their delay had elapsed.
     function game:RunTimers()
@@ -73,6 +143,21 @@ function helpers.newGame(locale)
         return self.ns
     end
     return game
+end
+
+--- Loads the whole add-on as the TOC lists it, with `data` standing in for
+--- the generated recipe file, and fires ADDON_LOADED.
+function helpers.loadAddon(game, data)
+    local ns = game.ns
+    for _, path in ipairs(helpers.tocFiles()) do
+        if path == "Data/Recipes.lua" and data then
+            ns.RecipeData = data
+        else
+            game:Load(path)
+        end
+    end
+    game:Fire("ADDON_LOADED", "WarcraftBets")
+    return ns
 end
 
 --- The Lua files listed in the TOC, in load order.

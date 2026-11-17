@@ -10,8 +10,13 @@
 Locales/enUS.lua
 Locales/frFR.lua
 Core.lua
+Compat.lua
+Money.lua
 Data/Recipes.lua
 Recipes.lua
 Prices.lua
 Learned.lua
 Engine.lua
+Analysis.lua
+View.lua
+Tooltip.lua

@@ -9,6 +9,21 @@ ns.locales.frFR = {
     HELP_OPTIONS = "/wsb options : ouvre les réglages",
     HELP_RESET = "/wsb reset : remet la fenêtre au centre",
 
+    TT_RAW = "%s, brut",
+    TT_TRANSFORMED = "Transformé (%s)",
+    TT_CRAFT_COST = "Coût de fabrication",
+    TT_HEADER = "WarcraftBets : meilleurs crafts",
+    PER_UNIT = "par unité",
+    TT_MORE_SHIFT = "+%d autres · Maj pour en voir plus",
+    TT_MORE_COMMAND = "+%d autres · /wsb pour tout voir",
+    SOURCE_tsm = "TSM",
+    SOURCE_auctionator = "Auctionator",
+    LOADING = "Chargement...",
+    UNKNOWN_PRICE = "?",
+    GOLD_SUFFIX = "po",
+    SILVER_SUFFIX = "pa",
+    COPPER_SUFFIX = "pc",
+
     -- Used when the client cannot name a profession itself.
     PROFESSION_40 = "Poisons",
     PROFESSION_129 = "Secourisme",
