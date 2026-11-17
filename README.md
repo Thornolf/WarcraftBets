@@ -8,7 +8,8 @@ not, and what each is worth at the auction house. A dedicated window (`/wsb`) sh
 
 ## Installation
 
-1. Copier ce dossier dans `World of Warcraft/_forever_/Interface/AddOns/` sous le nom `WarcraftBets`.
+1. Copier ce dossier dans `World of Warcraft/_forever_/Interface/AddOns/` sous le nom `WarcraftBets`
+   (le fichier `WarcraftBets.toc` doit se trouver directement dans `AddOns/WarcraftBets/`).
 2. Installer TradeSkillMaster ou Auctionator pour les prix (les deux sont facultatifs, l'un des deux est
    nécessaire pour voir des profits).
 3. Relancer le jeu ou taper `/reload`.
@@ -20,8 +21,8 @@ not, and what each is worth at the auction house. A dedicated window (`/wsb`) sh
 - `/wsb <lien ou nom d'objet>` : ouvre la fenêtre sur cet objet.
 - `/wsb options` : ouvre les réglages. `/wsb reset` : recentre la fenêtre.
 
-Ouvrir une fois la fenêtre de chaque métier, sur chaque personnage, pour que l'add-on sache quelles
-recettes sont apprises.
+Se connecter une fois avec chaque personnage pour que l'add-on sache quelles recettes il a apprises.
+Si une recette apprise reste grisée, ouvrir la fenêtre du métier concerné.
 
 ## Développement
 
