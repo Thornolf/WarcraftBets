@@ -23,7 +23,9 @@ read_globals = {
     "Enum",
     "GameTooltip",
     "GetCraftItemLink",
+    "GetItemIcon",
     "GetItemInfo",
+    "GetItemInfoInstant",
     "GetLocale",
     "GetMerchantItemID",
     "GetMerchantItemInfo",
@@ -36,8 +38,10 @@ read_globals = {
     "GetRealmName",
     "GetSkillLineInfo",
     "GetSpellInfo",
+    "GetSpellTexture",
     "GetTime",
     "GetTradeSkillRecipeLink",
+    "ITEM_QUALITY_COLORS",
     "InCombatLockdown",
     "IsPlayerSpell",
     "IsShiftKeyDown",
@@ -45,6 +49,8 @@ read_globals = {
     "ItemRefTooltip",
     "TSM_API",
     "TooltipDataProcessor",
+    "UIParent",
+    "UISpecialFrames",
     "UnitName",
 }
 
@@ -52,7 +58,9 @@ read_globals = {
 files["spec"] = {
     std = "+busted",
     allow_defined_top = true,
+    max_line_length = 130,
     ignore = { "121", "122", "131" },
+    read_globals = { "WarcraftBetsFrame" },
 }
 
 files["Data/Recipes.lua"] = {

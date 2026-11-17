@@ -23,7 +23,8 @@ local function spellIsKnown(spell)
     return IsSpellKnown ~= nil and IsSpellKnown(spell) or false
 end
 
-local function professionName(skill)
+--- Localised name of a profession, from the client when it can tell.
+function Learned.ProfessionName(skill)
     local display = C_TradeSkillUI and C_TradeSkillUI.GetTradeSkillDisplayName
     return display and display(skill) or ns.L["PROFESSION_" .. skill]
 end
@@ -52,7 +53,7 @@ local function readSkills()
     if GetNumSkillLines and GetSkillLineInfo then
         local byName = {}
         for skill in pairs(ns.RecipeData.skills) do
-            byName[professionName(skill)] = skill
+            byName[Learned.ProfessionName(skill)] = skill
         end
         for line = 1, GetNumSkillLines() do
             local name, isHeader, _, level = GetSkillLineInfo(line)

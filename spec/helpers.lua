@@ -2,23 +2,146 @@
 
 local helpers = {}
 
-local function newFrame()
-    local frame = { events = {}, scripts = {} }
-    function frame:RegisterEvent(event)
-        if event:match("^UNKNOWN") then
-            error("unknown event " .. event)
+-- A stand-in for any game widget: it records text, visibility, scripts and
+-- the few values the add-on reads back, and accepts every other call.
+local widgetMethods = {}
+
+local function newWidget(kind, parent)
+    local widget = { kind = kind, parent = parent, events = {}, scripts = {}, shown = true }
+    return setmetatable(widget, {
+        __index = function(_, key)
+            return widgetMethods[key] or function() end
+        end,
+    })
+end
+
+function widgetMethods:RegisterEvent(event)
+    if event:match("^UNKNOWN") then
+        error("unknown event " .. event)
+    end
+    self.events[event] = true
+end
+
+function widgetMethods:Fire(event, ...)
+    if self.events[event] then
+        self.scripts.OnEvent(self, event, ...)
+    end
+end
+
+function widgetMethods:SetScript(name, fn)
+    self.scripts[name] = fn
+end
+
+function widgetMethods:HookScript(name, fn)
+    local previous = self.scripts[name]
+    self.scripts[name] = previous and function(...)
+        previous(...)
+        fn(...)
+    end or fn
+end
+
+function widgetMethods:GetScript(name)
+    return self.scripts[name]
+end
+
+function widgetMethods:Run(name, ...)
+    return self.scripts[name](self, ...)
+end
+
+function widgetMethods:Show()
+    local wasShown = self.shown
+    self.shown = true
+    if not wasShown and self.scripts.OnShow then
+        self.scripts.OnShow(self)
+    end
+end
+
+function widgetMethods:Hide()
+    local wasShown = self.shown
+    self.shown = false
+    if wasShown and self.scripts.OnHide then
+        self.scripts.OnHide(self)
+    end
+end
+
+function widgetMethods:SetShown(shown)
+    if shown then
+        self:Show()
+    else
+        self:Hide()
+    end
+end
+
+function widgetMethods:IsShown()
+    return self.shown
+end
+
+function widgetMethods:SetText(text)
+    self.text = text
+    if self.kind == "EditBox" and self.scripts.OnTextChanged then
+        self.scripts.OnTextChanged(self)
+    end
+end
+
+function widgetMethods:GetText()
+    return self.text
+end
+
+function widgetMethods:SetTextColor(r, g, b)
+    self.textColor = { r, g, b }
+end
+
+function widgetMethods:SetTexture(texture)
+    self.texture = texture
+end
+
+function widgetMethods:SetDesaturated(desaturated)
+    self.desaturated = desaturated
+end
+
+function widgetMethods:SetFontObject(font)
+    self.font = font
+end
+
+function widgetMethods:EnableMouse(enabled)
+    self.mouse = enabled
+end
+
+function widgetMethods:SetPoint(point, relativeTo, relativePoint, x, y)
+    self.point = { point, relativeTo, relativePoint, x, y }
+end
+
+function widgetMethods:GetPoint()
+    return unpack(self.point or {}, 1, 5)
+end
+
+function widgetMethods:GetFrameLevel()
+    return 1
+end
+
+function widgetMethods:SetMinMaxValues(lowest, highest)
+    self.range = { lowest, highest }
+end
+
+function widgetMethods:GetMinMaxValues()
+    return unpack(self.range or { 0, 0 })
+end
+
+function widgetMethods:SetValue(value)
+    if value ~= self.value then
+        self.value = value
+        if self.scripts.OnValueChanged then
+            self.scripts.OnValueChanged(self, value)
         end
-        self.events[event] = true
     end
-    function frame:SetScript(name, fn)
-        self.scripts[name] = fn
-    end
-    function frame:Fire(event, ...)
-        if self.events[event] then
-            self.scripts.OnEvent(self, event, ...)
-        end
-    end
-    return frame
+end
+
+function widgetMethods:CreateFontString()
+    return newWidget("FontString", self)
+end
+
+function widgetMethods:CreateTexture()
+    return newWidget("Texture", self)
 end
 
 local function newTooltip()
@@ -39,6 +162,16 @@ local function newTooltip()
     function tooltip:HookScript(name, fn)
         self.hooks[name] = fn
     end
+    function tooltip:SetOwner(owner)
+        self.owner = owner
+        self.lines = {}
+    end
+    function tooltip:SetItemByID(item)
+        self.item = item
+    end
+    function tooltip:Hide()
+        self.shown = false
+    end
     return tooltip
 end
 
@@ -57,17 +190,32 @@ function helpers.newGame(locale)
         knownSpells = {},
         ranks = {},
         prices = {},
+        missingTemplates = {},
     }
     _G.WarcraftBetsDB = nil
     _G.SlashCmdList = {}
     _G.GetLocale = function()
         return locale or "enUS"
     end
-    _G.CreateFrame = function()
-        local frame = newFrame()
+    _G.CreateFrame = function(kind, name, parent, template)
+        if template and game.missingTemplates[template] then
+            error("Couldn't find inherited node: " .. template)
+        end
+        local frame = newWidget(kind, parent)
+        frame.template = template
+        if template == "BasicFrameTemplateWithInset" then
+            frame.CloseButton = newWidget("Button", frame)
+            frame.TitleText = newWidget("FontString", frame)
+        end
+        if name then
+            _G[name] = frame
+        end
         table.insert(game.frames, frame)
         return frame
     end
+    _G.UIParent = newWidget("Frame")
+    _G.UISpecialFrames = {}
+    _G.WarcraftBetsFrame = nil
     _G.DEFAULT_CHAT_FRAME = {
         AddMessage = function(_, text)
             table.insert(game.chat, text)
@@ -97,10 +245,27 @@ function helpers.newGame(locale)
         GetItemNameByID = function(item)
             return game.itemNames[item]
         end,
+        GetItemIconByID = function(item)
+            return "icon-" .. item
+        end,
+        GetItemQualityByID = function()
+            return 2
+        end,
+        GetItemInfoInstant = function(text)
+            for item, name in pairs(game.itemNames) do
+                if name == text then
+                    return item
+                end
+            end
+        end,
     }
+    _G.ITEM_QUALITY_COLORS = { [2] = { r = 0.12, g = 1, b = 0 } }
     _G.C_Spell = {
         GetSpellName = function(spell)
             return game.spellNames[spell]
+        end,
+        GetSpellTexture = function(spell)
+            return "spell-" .. spell
         end,
     }
     _G.IsPlayerSpell = function(spell)

@@ -13,5 +13,5 @@ data:
 
 zip:
 	rm -rf dist && mkdir -p dist/WarcraftBets
-	cp -r WarcraftBets.toc *.lua Locales Data LICENSE README.md dist/WarcraftBets/
+	cp -r WarcraftBets.toc *.lua Locales Data UI LICENSE README.md dist/WarcraftBets/
 	cd dist && zip -qr WarcraftBets.zip WarcraftBets && rm -rf WarcraftBets
