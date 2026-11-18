@@ -55,7 +55,7 @@ describe("window", function()
     it("explains how to pick an item when opened without one", function()
         slash("")
         assert.is_true(WarcraftBetsFrame:IsShown())
-        assert.are.equal("Hover an item and type /wsb, or type /wsb <item link>.", widgets().name:GetText())
+        assert.are.equal("Drop an item on the slot, or Shift-click one in your bags.", widgets().name:GetText())
         assert.are.same({}, rowTexts())
         assert.is_false(widgets().detail:IsShown())
     end)
@@ -64,7 +64,8 @@ describe("window", function()
         ns.lastItem = items.ORE
         slash("")
         assert.are.equal("Copper Ore", widgets().name:GetText())
-        assert.are.equal("icon-" .. items.ORE, widgets().icon.texture)
+        assert.are.equal("icon-" .. items.ORE, widgets().slot.icon.texture)
+        assert.are.equal("Profit per Copper Ore", widgets().profitColumn:GetText())
         assert.are.equal("TSM, raw 6s     Transformed (Copper Bar) 8s", plain(widgets().summary:GetText()))
         assert.are.same({
             "# Directly",
@@ -109,6 +110,223 @@ describe("window", function()
     it("closes with Escape like the native panels", function()
         slash("Copper Ore")
         assert.are.same({ "WarcraftBetsFrame" }, UISpecialFrames)
+    end)
+
+    describe("item slot", function()
+        it("opens an item dropped on it and takes it off the cursor", function()
+            slash("")
+            game.cursorItem = items.BAR
+            widgets().slot:Run("OnReceiveDrag")
+            assert.are.equal("Copper Bar", widgets().name:GetText())
+            assert.is_nil(game.cursorItem)
+        end)
+
+        it("opens an item clicked onto it", function()
+            slash("Copper Ore")
+            game.cursorItem = items.BAR
+            widgets().slot:Run("OnClick", "LeftButton")
+            assert.are.equal("Copper Bar", widgets().name:GetText())
+        end)
+
+        it("ignores a click with nothing on the cursor", function()
+            slash("Copper Ore")
+            widgets().slot:Run("OnClick", "LeftButton")
+            assert.are.equal("Copper Ore", widgets().name:GetText())
+        end)
+
+        it("explains itself on hover", function()
+            slash("")
+            widgets().slot:Run("OnEnter")
+            assert.are.equal("Drop an item here, or Shift-click one in your bags", GameTooltip.lines[1].left)
+        end)
+    end)
+
+    describe("Shift-click on an item", function()
+        local BAR_LINK = "|cffffffff|Hitem:2::::::::60:::::|h[Copper Bar]|h|r"
+
+        it("opens the item when the window is open", function()
+            slash("Copper Ore")
+            ChatEdit_InsertLink(BAR_LINK)
+            assert.are.equal("Copper Bar", widgets().name:GetText())
+            assert.are.same({}, game.chatBox)
+        end)
+
+        it("is left to the chat when the chat box is open", function()
+            slash("Copper Ore")
+            game.chatBoxOpen = true
+            ChatEdit_InsertLink(BAR_LINK)
+            assert.are.equal("Copper Ore", widgets().name:GetText())
+            assert.are.same({ BAR_LINK }, game.chatBox)
+        end)
+
+        it("does nothing when the window is closed", function()
+            slash("Copper Ore")
+            WarcraftBetsFrame:Hide()
+            ChatEdit_InsertLink(BAR_LINK)
+            assert.is_false(WarcraftBetsFrame:IsShown())
+        end)
+
+        it("ignores links that are not items", function()
+            slash("Copper Ore")
+            ChatEdit_InsertLink("|Henchant:2657|h[Smelt Copper]|h")
+            assert.are.equal("Copper Ore", widgets().name:GetText())
+        end)
+
+        it("hooks the newer chat API when the client has it", function()
+            start(function()
+                _G.ChatFrameUtil = {
+                    InsertLink = function()
+                        return false
+                    end,
+                    GetActiveWindow = function() end,
+                    OpenChat = function() end,
+                }
+            end)
+            slash("Copper Ore")
+            ChatFrameUtil.InsertLink(BAR_LINK)
+            assert.are.equal("Copper Bar", widgets().name:GetText())
+        end)
+    end)
+
+    describe("item field", function()
+        it("shows the name of the item being studied", function()
+            slash("Copper Ore")
+            assert.are.equal("Copper Ore", widgets().itemField:GetText())
+        end)
+
+        it("opens the item typed into it", function()
+            slash("Copper Ore")
+            widgets().itemField:SetFocus()
+            widgets().itemField:SetText("  Copper Bar ")
+            widgets().itemField:Run("OnEnterPressed")
+            assert.are.equal("Copper Bar", widgets().name:GetText())
+            assert.is_false(widgets().itemField:HasFocus())
+        end)
+
+        it("says when it cannot find what was typed and keeps the current item", function()
+            slash("Copper Ore")
+            widgets().itemField:SetFocus()
+            widgets().itemField:SetText("Thunderfury")
+            widgets().itemField:Run("OnEnterPressed")
+            assert.are.equal("Copper Ore", widgets().name:GetText())
+            assert.is_truthy(game.chat[#game.chat]:find("Item not found: Thunderfury", 1, true))
+        end)
+
+        it("lists recent items, most recent first, while it has focus", function()
+            slash("Copper Ore")
+            slash("Copper Bar")
+            slash("Copper Chain Belt")
+            slash("Copper Bar")
+            local recents = widgets().recents
+            assert.is_false(recents:IsShown())
+            widgets().itemField:SetFocus()
+            assert.is_true(recents:IsShown())
+            assert.are.equal("Recent", recents.title:GetText())
+            local names = {}
+            for _, row in ipairs(recents.rows) do
+                if row:IsShown() then
+                    table.insert(names, row.name:GetText())
+                end
+            end
+            assert.are.same({ "Copper Bar", "Copper Chain Belt", "Copper Ore" }, names)
+        end)
+
+        it("opens a recent item that is clicked", function()
+            slash("Copper Ore")
+            slash("Copper Bar")
+            widgets().itemField:SetFocus()
+            widgets().recents.rows[2]:Run("OnClick", "LeftButton")
+            assert.are.equal("Copper Ore", widgets().name:GetText())
+            assert.is_false(widgets().recents:IsShown())
+        end)
+
+        it("keeps the list up long enough for a click when focus is lost, then hides it", function()
+            slash("Copper Ore")
+            widgets().itemField:SetFocus()
+            widgets().itemField:ClearFocus()
+            assert.is_true(widgets().recents:IsShown())
+            game:RunTimers()
+            assert.is_false(widgets().recents:IsShown())
+        end)
+
+        it("closes the list on Escape", function()
+            slash("Copper Ore")
+            widgets().itemField:SetFocus()
+            widgets().itemField:Run("OnEscapePressed")
+            assert.is_false(widgets().recents:IsShown())
+        end)
+
+        it("says so when nothing was opened yet", function()
+            slash("")
+            widgets().itemField:SetFocus()
+            assert.are.equal("No item opened yet", widgets().recents.title:GetText())
+        end)
+
+        it("does not overwrite what is being typed when the window redraws", function()
+            slash("Copper Ore")
+            widgets().itemField:SetFocus()
+            widgets().itemField:SetText("Copp")
+            ns:Set("cut", 10)
+            assert.are.equal("Copp", widgets().itemField:GetText())
+        end)
+    end)
+
+    describe("recent items", function()
+        it("are saved with the account and capped at ten", function()
+            for item = 20, 32 do
+                game.itemNames[item] = "Item " .. item
+                slash("Item " .. item)
+            end
+            assert.are.equal(10, #ns.db.recents)
+            assert.are.equal(32, ns.db.recents[1])
+            assert.are.equal(23, ns.db.recents[10])
+        end)
+
+        it("are restored from the saved variables", function()
+            game = helpers.newGame()
+            fixture.populate(game)
+            _G.WarcraftBetsDB = { recents = { items.BAR, items.ORE } }
+            helpers.loadAddon(game, fixture.data())
+            SlashCmdList.WARCRAFTBETS("")
+            widgets().itemField:SetFocus()
+            assert.are.equal("Copper Bar", widgets().recents.rows[1].name:GetText())
+        end)
+    end)
+
+    describe("tabs", function()
+        before_each(function()
+            slash("Copper Ore")
+        end)
+
+        it("start on the item tab", function()
+            assert.is_true(widgets().pages.item:IsShown())
+            assert.is_false(widgets().pages.explorer:IsShown())
+            assert.is_false(widgets().pages.favorites:IsShown())
+            assert.is_true(widgets().tabs.item.highlightLocked)
+            assert.is_false(widgets().tabs.explorer.highlightLocked)
+        end)
+
+        it("switch page when a tab is clicked", function()
+            widgets().tabs.explorer:Run("OnClick")
+            assert.is_false(widgets().pages.item:IsShown())
+            assert.is_true(widgets().pages.explorer:IsShown())
+            assert.is_true(widgets().tabs.explorer.highlightLocked)
+            assert.is_false(widgets().tabs.item.highlightLocked)
+        end)
+
+        it("come back to the item tab when an item is opened", function()
+            widgets().tabs.favorites:Run("OnClick")
+            slash("Copper Bar")
+            assert.is_true(widgets().pages.item:IsShown())
+        end)
+
+        it("stay on the same tab when the window is closed and reopened", function()
+            widgets().tabs.explorer:Run("OnClick")
+            slash("")
+            ns.lastItem = nil
+            slash("")
+            assert.is_true(widgets().pages.explorer:IsShown())
+        end)
     end)
 
     describe("craft list", function()

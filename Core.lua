@@ -80,6 +80,7 @@ ns:On("ADDON_LOADED", function(name)
     end
     db.chars = db.chars or {}
     db.vendor = db.vendor or {}
+    db.recents = db.recents or {}
     ns.db = db
     ns:Fire("READY")
 end)

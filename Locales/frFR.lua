@@ -61,7 +61,7 @@ ns.locales.frFR = {
     DRAG_HINT = "Relâche le clic pour poser la fenêtre",
     EMPTY_LIST = "Aucun craft ne correspond.",
     NO_USES = "Aucune recette n'utilise cet objet.",
-    NO_ITEM = "Survole un objet puis tape /wsb, ou tape /wsb <lien d'objet>.",
+    NO_ITEM = "Glisse un objet sur la case, ou Maj+clic dans ton sac.",
     ITEM_NOT_FOUND = "Objet introuvable : %s",
     IN_COMBAT = "Indisponible en combat.",
     SELECT_CRAFT = "Choisis un craft dans la liste.",
@@ -89,6 +89,17 @@ ns.locales.frFR = {
     FORMULA_CUSTOM = "Formule perso",
     SOURCE_TSM_PRICE = "%s (%s)",
     OPTION_TSM_PRICE = "Prix TSM",
+
+    TAB_item = "Objet",
+    TAB_explorer = "Explorer",
+    TAB_favorites = "Favoris",
+    TAB_COMING = "Disponible dans une prochaine version.",
+    ITEM_FIELD = "Objet",
+    RECENTS = "Récents",
+    NO_RECENTS = "Aucun objet ouvert pour l'instant",
+    SLOT_HINT = "Glisse un objet ici, ou Maj+clic sur un objet du sac",
+    COLUMN_CRAFT = "Craft",
+    COLUMN_PROFIT_PER = "Profit par %s",
 
     -- Used when the client cannot name a profession itself.
     PROFESSION_40 = "Poisons",

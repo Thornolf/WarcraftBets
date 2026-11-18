@@ -61,7 +61,7 @@ ns.locales.enUS = {
     DRAG_HINT = "Release to drop the window",
     EMPTY_LIST = "No craft matches.",
     NO_USES = "No recipe uses this item.",
-    NO_ITEM = "Hover an item and type /wsb, or type /wsb <item link>.",
+    NO_ITEM = "Drop an item on the slot, or Shift-click one in your bags.",
     ITEM_NOT_FOUND = "Item not found: %s",
     IN_COMBAT = "Not available in combat.",
     SELECT_CRAFT = "Select a craft in the list.",
@@ -89,6 +89,17 @@ ns.locales.enUS = {
     FORMULA_CUSTOM = "Custom formula",
     SOURCE_TSM_PRICE = "%s (%s)",
     OPTION_TSM_PRICE = "TSM price",
+
+    TAB_item = "Item",
+    TAB_explorer = "Explore",
+    TAB_favorites = "Favourites",
+    TAB_COMING = "Coming in a later version.",
+    ITEM_FIELD = "Item",
+    RECENTS = "Recent",
+    NO_RECENTS = "No item opened yet",
+    SLOT_HINT = "Drop an item here, or Shift-click one in your bags",
+    COLUMN_CRAFT = "Craft",
+    COLUMN_PROFIT_PER = "Profit per %s",
 
     -- Used when the client cannot name a profession itself.
     PROFESSION_40 = "Poisons",

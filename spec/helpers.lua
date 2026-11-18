@@ -9,8 +9,15 @@ local widgetMethods = {}
 local function newWidget(kind, parent)
     local widget = { kind = kind, parent = parent, events = {}, scripts = {}, shown = true }
     return setmetatable(widget, {
+        -- Widget methods are capitalised; anything else is a field the add-on
+        -- set itself, and reads as nil until it does.
         __index = function(_, key)
-            return widgetMethods[key] or function() end
+            if widgetMethods[key] then
+                return widgetMethods[key]
+            end
+            if type(key) == "string" and key:match("^%u") then
+                return function() end
+            end
         end,
     })
 end
@@ -148,6 +155,32 @@ function widgetMethods:HasFocus()
     return self.focused == true
 end
 
+function widgetMethods:SetFocus()
+    if not self.focused then
+        self.focused = true
+        if self.scripts.OnEditFocusGained then
+            self.scripts.OnEditFocusGained(self)
+        end
+    end
+end
+
+function widgetMethods:ClearFocus()
+    if self.focused then
+        self.focused = false
+        if self.scripts.OnEditFocusLost then
+            self.scripts.OnEditFocusLost(self)
+        end
+    end
+end
+
+function widgetMethods:LockHighlight()
+    self.highlightLocked = true
+end
+
+function widgetMethods:UnlockHighlight()
+    self.highlightLocked = false
+end
+
 function widgetMethods:CreateFontString()
     return newWidget("FontString", self)
 end
@@ -237,6 +270,28 @@ function helpers.newGame(locale)
             return true
         end
         return false
+    end
+    _G.ChatEdit_GetActiveWindow = function()
+        return game.chatBoxOpen and {} or nil
+    end
+    _G.hooksecurefunc = function(owner, name, hook)
+        if type(owner) == "string" then
+            owner, name, hook = _G, owner, name
+        end
+        local original = owner[name]
+        owner[name] = function(...)
+            local results = { original(...) }
+            hook(...)
+            return unpack(results)
+        end
+    end
+    _G.GetCursorInfo = function()
+        if game.cursorItem then
+            return "item", game.cursorItem
+        end
+    end
+    _G.ClearCursor = function()
+        game.cursorItem = nil
     end
     _G.ChatFrame_OpenChat = function(text)
         game.chatBoxOpen = true

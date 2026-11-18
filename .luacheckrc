@@ -18,14 +18,17 @@ read_globals = {
     "C_SpellBook",
     "C_Timer",
     "C_TradeSkillUI",
+    "ChatEdit_GetActiveWindow",
     "ChatEdit_InsertLink",
     "ChatFrameUtil",
     "ChatFrame_OpenChat",
+    "ClearCursor",
     "CreateFrame",
     "DEFAULT_CHAT_FRAME",
     "Enum",
     "GameTooltip",
     "GetCraftItemLink",
+    "GetCursorInfo",
     "GetItemIcon",
     "GetItemInfo",
     "GetItemInfoInstant",
@@ -57,6 +60,7 @@ read_globals = {
     "UIParent",
     "UISpecialFrames",
     "UnitName",
+    "hooksecurefunc",
 }
 
 -- The specs replace the game API with fakes, so they write what the add-on only reads.

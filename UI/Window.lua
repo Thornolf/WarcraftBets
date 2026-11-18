@@ -4,10 +4,18 @@ local Window = {}
 ns.Window = Window
 
 local FRAME_NAME = "WarcraftBetsFrame"
-local WIDTH, HEIGHT = 820, 520
+local WIDTH, HEIGHT = 880, 600
 local MARGIN = 14
-local HEADER_TOP, CONTENT_TOP = 30, 78
-local LIST_WIDTH = 320
+-- Tabs sit under the title bar; each tab's page starts below them, and the
+-- offsets after it are measured from the top of the page.
+local TAB_TOP, PAGE_TOP = 28, 56
+local HEADER_TOP, CONTENT_TOP = 4, 52
+local LIST_TOP = CONTENT_TOP + 46
+local LIST_WIDTH = 330
+local TABS = { "item", "explorer", "favorites" }
+local RECENT_ROWS = 10
+local RECENT_ROW_HEIGHT = 20
+local FOCUS_LOST_HIDE_SECONDS = 0.2
 local ROW_HEIGHT = 24
 local VISIBLE_ROWS = 16
 local SCROLLBAR_WIDTH = 14
@@ -20,7 +28,7 @@ local NAME_REFRESH_SECONDS = 0.3
 local GREEN = { 0.12, 1, 0 }
 
 local frame
-local state = { search = "", filter = "all", rows = {}, offset = 0 }
+local state = { tab = "item", search = "", filter = "all", rows = {}, offset = 0 }
 
 local function label(parent, font, justify)
     local text = parent:CreateFontString(nil, "ARTWORK", font)
@@ -118,13 +126,36 @@ end
 local PRICE_SOURCES = { "auto", "tsm", "auctionator" }
 
 local function buildHeader(parent, widgets)
-    widgets.icon = parent:CreateTexture(nil, "ARTWORK")
-    widgets.icon:SetSize(36, 36)
-    widgets.icon:SetPoint("TOPLEFT", parent, "TOPLEFT", MARGIN, -HEADER_TOP)
+    local slot = CreateFrame("Button", nil, parent)
+    slot:SetSize(40, 40)
+    slot:SetPoint("TOPLEFT", parent, "TOPLEFT", MARGIN, -HEADER_TOP)
+    colorTexture(slot, "BACKGROUND", 1, 0.82, 0, 0.9):SetAllPoints(slot)
+    slot.icon = slot:CreateTexture(nil, "ARTWORK")
+    slot.icon:SetPoint("TOPLEFT", slot, "TOPLEFT", 2, -2)
+    slot.icon:SetPoint("BOTTOMRIGHT", slot, "BOTTOMRIGHT", -2, 2)
+    slot:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    local function takeCursorItem()
+        local item = ns.Compat.CursorItem()
+        if item then
+            ClearCursor()
+            Window:Open(item)
+        end
+    end
+    slot:SetScript("OnReceiveDrag", takeCursorItem)
+    slot:SetScript("OnClick", takeCursorItem)
+    slot:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:AddLine(ns.L.SLOT_HINT, 1, 1, 1)
+        GameTooltip:Show()
+    end)
+    slot:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    widgets.slot = slot
 
     widgets.sourceButton = ns.Compat.CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
     widgets.sourceButton:SetSize(170, 22)
-    widgets.sourceButton:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -MARGIN, -HEADER_TOP - 6)
+    widgets.sourceButton:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -MARGIN, -HEADER_TOP - 8)
     widgets.sourceButton:SetScript("OnClick", function()
         ns:Set("priceSource", cycle(PRICE_SOURCES, ns.db.settings.priceSource))
     end)
@@ -137,11 +168,11 @@ local function buildHeader(parent, widgets)
     end)
 
     widgets.name = label(parent, "GameFontNormalLarge")
-    widgets.name:SetPoint("TOPLEFT", widgets.icon, "TOPRIGHT", 10, -2)
+    widgets.name:SetPoint("TOPLEFT", slot, "TOPRIGHT", 10, -3)
     widgets.name:SetPoint("RIGHT", widgets.formulaButton, "LEFT", -10, 0)
 
     widgets.summary = label(parent, "GameFontHighlightSmall")
-    widgets.summary:SetPoint("BOTTOMLEFT", widgets.icon, "BOTTOMRIGHT", 10, 2)
+    widgets.summary:SetPoint("BOTTOMLEFT", slot, "BOTTOMRIGHT", 10, 3)
     widgets.summary:SetPoint("RIGHT", widgets.formulaButton, "LEFT", -10, 0)
 end
 
@@ -173,6 +204,13 @@ local function buildFilters(parent, widgets)
         Window:Refresh()
     end)
     widgets.filter = filter
+
+    local craftColumn = label(parent, "GameFontDisableSmall")
+    craftColumn:SetPoint("TOPLEFT", parent, "TOPLEFT", MARGIN + 6, -CONTENT_TOP - 28)
+    craftColumn:SetText(ns.L.COLUMN_CRAFT)
+    widgets.profitColumn = label(parent, "GameFontDisableSmall", "RIGHT")
+    local right = MARGIN + LIST_WIDTH - SCROLLBAR_WIDTH - 8
+    widgets.profitColumn:SetPoint("TOPRIGHT", parent, "TOPLEFT", right, -CONTENT_TOP - 28)
 end
 
 local function showRowTooltip(row)
@@ -220,7 +258,7 @@ end
 
 local function buildList(parent, widgets)
     local list = CreateFrame("Frame", nil, parent)
-    list:SetPoint("TOPLEFT", parent, "TOPLEFT", MARGIN, -CONTENT_TOP - 28)
+    list:SetPoint("TOPLEFT", parent, "TOPLEFT", MARGIN, -LIST_TOP)
     list:SetSize(LIST_WIDTH, VISIBLE_ROWS * ROW_HEIGHT)
     widgets.list = list
 
@@ -361,6 +399,125 @@ local function buildDetail(parent, widgets)
     end)
 end
 
+local function buildTabs(parent, widgets)
+    widgets.tabs, widgets.pages = {}, {}
+    local previous
+    for _, tab in ipairs(TABS) do
+        local button = ns.Compat.CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+        button:SetSize(110, 22)
+        if previous then
+            button:SetPoint("LEFT", previous, "RIGHT", 4, 0)
+        else
+            button:SetPoint("TOPLEFT", parent, "TOPLEFT", MARGIN, -TAB_TOP)
+        end
+        button:SetText(ns.L["TAB_" .. tab])
+        button:SetScript("OnClick", function()
+            Window:ShowTab(tab)
+        end)
+        widgets.tabs[tab], previous = button, button
+
+        local page = CreateFrame("Frame", nil, parent)
+        page:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, -PAGE_TOP)
+        page:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", 0, 0)
+        widgets.pages[tab] = page
+    end
+    for _, tab in ipairs({ "explorer", "favorites" }) do
+        local soon = label(widgets.pages[tab], "GameFontDisable", "CENTER")
+        soon:SetPoint("CENTER", widgets.pages[tab], "CENTER", 0, 0)
+        soon:SetText(ns.L.TAB_COMING)
+    end
+end
+
+local function openFromText(text)
+    local item = ns.Compat.ItemFromText(text)
+    if item then
+        Window:Open(item)
+    else
+        ns:Print(ns.L.ITEM_NOT_FOUND:format(text))
+    end
+end
+
+-- The item field in the tab row: type a name or paste a link, or pick one of
+-- the recent items listed under it while it has focus.
+local function buildItemField(parent, widgets)
+    local field = ns.Compat.CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
+    field:SetSize(200, 20)
+    field:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -MARGIN, -TAB_TOP - 1)
+    field:SetAutoFocus(false)
+    field:SetFontObject("ChatFontNormal")
+    widgets.itemField = field
+
+    local caption = label(parent, "GameFontNormalSmall", "RIGHT")
+    caption:SetPoint("RIGHT", field, "LEFT", -10, 0)
+    caption:SetText(ns.L.ITEM_FIELD)
+
+    local recents = CreateFrame("Frame", nil, parent)
+    recents:SetFrameLevel(parent:GetFrameLevel() + 30)
+    recents:SetPoint("TOPRIGHT", field, "BOTTOMRIGHT", 0, -2)
+    recents:SetSize(206, 0)
+    recents:EnableMouse(true)
+    colorTexture(recents, "BACKGROUND", 0.04, 0.04, 0.1, 0.97):SetAllPoints(recents)
+    recents.title = label(recents, "GameFontNormalSmall")
+    recents.title:SetPoint("TOPLEFT", recents, "TOPLEFT", 8, -6)
+    recents.rows = {}
+    for position = 1, RECENT_ROWS do
+        local row = CreateFrame("Button", nil, recents)
+        row:SetHeight(RECENT_ROW_HEIGHT)
+        row:SetPoint("TOPLEFT", recents, "TOPLEFT", 4, -22 - (position - 1) * RECENT_ROW_HEIGHT)
+        row:SetPoint("RIGHT", recents, "RIGHT", -4, 0)
+        row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+        row.name = label(row, "GameFontHighlightSmall")
+        row.name:SetPoint("LEFT", row, "LEFT", 4, 0)
+        row.name:SetPoint("RIGHT", row, "RIGHT", -4, 0)
+        row:SetScript("OnClick", function(self)
+            field:ClearFocus()
+            recents:Hide()
+            Window:Open(self.item)
+        end)
+        recents.rows[position] = row
+    end
+    recents:Hide()
+    widgets.recents = recents
+
+    field:SetScript("OnEditFocusGained", function(self)
+        -- Selecting the current name lets the first keystroke replace it.
+        self:HighlightText()
+        local items = ns.History.List()
+        recents.title:SetText(#items > 0 and ns.L.RECENTS or ns.L.NO_RECENTS)
+        for position, row in ipairs(recents.rows) do
+            local item = items[position]
+            row.item = item
+            row:SetShown(item ~= nil)
+            if item then
+                row.name:SetText(ns.Compat.ItemName(item) or ns.L.LOADING)
+            end
+        end
+        recents:SetHeight(28 + #items * RECENT_ROW_HEIGHT)
+        recents:Show()
+    end)
+    -- A click on a recent item takes the focus away before it lands; hiding
+    -- the list at once would swallow that click.
+    field:SetScript("OnEditFocusLost", function()
+        C_Timer.After(FOCUS_LOST_HIDE_SECONDS, function()
+            if not field:HasFocus() then
+                recents:Hide()
+            end
+        end)
+    end)
+    field:SetScript("OnEnterPressed", function(self)
+        local text = (self:GetText() or ""):match("^%s*(.-)%s*$")
+        self:ClearFocus()
+        recents:Hide()
+        if text ~= "" then
+            openFromText(text)
+        end
+    end)
+    field:SetScript("OnEscapePressed", function(self)
+        self:ClearFocus()
+        recents:Hide()
+    end)
+end
+
 local function build()
     local Compat = ns.Compat
     local window = Compat.CreateFrame("Frame", FRAME_NAME, UIParent, "BasicFrameTemplateWithInset")
@@ -393,10 +550,13 @@ local function build()
     window.widgets = widgets
     widgets.dragOverlay = buildDragOverlay(window)
     makeMovable(window, widgets.dragOverlay)
-    buildHeader(window, widgets)
-    buildFilters(window, widgets)
-    buildList(window, widgets)
-    buildDetail(window, widgets)
+    buildTabs(window, widgets)
+    buildItemField(window, widgets)
+    local page = widgets.pages.item
+    buildHeader(page, widgets)
+    buildFilters(page, widgets)
+    buildList(page, widgets)
+    buildDetail(page, widgets)
 
     place(window)
     table.insert(UISpecialFrames, FRAME_NAME)
@@ -411,13 +571,20 @@ local function drawHeader(widgets)
     widgets.formulaButton:SetShown(ns.Prices.IsAvailable("tsm"))
     widgets.filter:SetText(L["FILTER_" .. state.filter])
     if not item then
-        widgets.icon:SetTexture(nil)
+        widgets.slot.icon:SetTexture("Interface\\PaperDoll\\UI-Backpack-EmptySlot")
         widgets.name:SetText(L.NO_ITEM)
         widgets.summary:SetText("")
+        widgets.profitColumn:SetText("")
+        widgets.itemField:SetText("")
         return
     end
-    widgets.icon:SetTexture(Compat.ItemIcon(item))
-    widgets.name:SetText(Compat.ItemName(item) or L.LOADING)
+    local name = Compat.ItemName(item) or L.LOADING
+    widgets.slot.icon:SetTexture(Compat.ItemIcon(item))
+    widgets.name:SetText(name)
+    widgets.profitColumn:SetText(L.COLUMN_PROFIT_PER:format(name))
+    if not widgets.itemField:HasFocus() then
+        widgets.itemField:SetText(name)
+    end
     local parts = {}
     for _, line in ipairs(ns.View.PriceLines(item)) do
         table.insert(parts, line.left .. " " .. line.right)
@@ -523,6 +690,14 @@ function Window:Refresh()
         return
     end
     local widgets = frame.widgets
+    for tab, page in pairs(widgets.pages) do
+        page:SetShown(tab == state.tab)
+        if tab == state.tab then
+            widgets.tabs[tab]:LockHighlight()
+        else
+            widgets.tabs[tab]:UnlockHighlight()
+        end
+    end
     drawHeader(widgets)
 
     state.rows = state.item and ns.View.ListRows(state.item, state.search, state.filter) or {}
@@ -560,12 +735,22 @@ function Window:Open(item)
         return
     end
     frame = frame or build()
+    if item then
+        ns.History.Add(item)
+        state.tab = "item"
+    end
     if item and item ~= state.item then
         state.item, state.offset, state.selected = item, 0, nil
         frame.widgets.search:SetText("")
         state.search = ""
     end
     frame:Show()
+    Window:Refresh()
+end
+
+--- Switches the window to one of its tabs: "item", "explorer" or "favorites".
+function Window:ShowTab(tab)
+    state.tab = tab
     Window:Refresh()
 end
 
@@ -594,12 +779,17 @@ ns:RegisterCommand("reset", function()
     Window:ResetPosition()
 end)
 
-ns:RegisterCommand("*", function(text)
-    local item = ns.Compat.ItemFromText(text)
+ns:RegisterCommand("*", openFromText)
+
+-- With the window open, a Shift-click on an item studies it; with the chat
+-- box open, the click keeps its usual meaning and links the item there.
+ns.Compat.OnChatLink(function(link)
+    if not (frame and frame:IsShown()) or ns.Compat.ChatIsActive() or ns.Compat.InCombat() then
+        return
+    end
+    local item = type(link) == "string" and tonumber(link:match("item:(%d+)"))
     if item then
         Window:Open(item)
-    else
-        ns:Print(ns.L.ITEM_NOT_FOUND:format(text))
     end
 end)
 

@@ -111,3 +111,24 @@ function Compat.InsertInChat(text)
     local open = ChatFrameUtil and ChatFrameUtil.OpenChat or ChatFrame_OpenChat
     open(text)
 end
+
+--- Item id held on the cursor, as when an item is being dragged, or nil.
+function Compat.CursorItem()
+    local kind, item = GetCursorInfo()
+    return kind == "item" and item or nil
+end
+
+--- Whether the chat edit box is open, so a Shift-click belongs to the chat.
+function Compat.ChatIsActive()
+    local active = ChatFrameUtil and ChatFrameUtil.GetActiveWindow or ChatEdit_GetActiveWindow
+    return active ~= nil and active() ~= nil
+end
+
+--- Runs fn after every Shift-click that links something to chat.
+function Compat.OnChatLink(fn)
+    if ChatFrameUtil and ChatFrameUtil.InsertLink then
+        hooksecurefunc(ChatFrameUtil, "InsertLink", fn)
+    elseif ChatEdit_InsertLink then
+        hooksecurefunc("ChatEdit_InsertLink", fn)
+    end
+end
