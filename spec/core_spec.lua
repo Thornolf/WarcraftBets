@@ -55,8 +55,8 @@ describe("core", function()
 
     it("prints help for a bare command until a module takes it over", function()
         _G.SlashCmdList.WARCRAFTBETS("")
-        assert.are.equal(5, #game.chat)
-        assert.is_truthy(game.chat[1]:find("1.1.0", 1, true))
+        assert.are.equal(6, #game.chat)
+        assert.is_truthy(game.chat[1]:find("2.0.0", 1, true))
     end)
 
     it("routes sub-commands and free text", function()

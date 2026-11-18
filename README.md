@@ -19,7 +19,13 @@ not, and what each is worth at the auction house. A dedicated window (`/wsb`) sh
 
 - Survoler un objet : les 2 meilleurs crafts s'affichent, 5 en maintenant Maj.
 - `/wsb` ou `/wb` : ouvre la fenêtre sur le dernier objet survolé.
-- `/wsb <lien ou nom d'objet>` : ouvre la fenêtre sur cet objet.
+- Fenêtre ouverte : glisser un objet sur la case en haut à gauche, ou Maj+clic sur un objet du sac,
+  pour l'étudier. Le champ « Objet » accepte un nom ou un lien et liste les objets récents.
+- Onglet **Objet** : les crafts qui utilisent l'objet, avec le profit « pour moi », « tout acheter » et
+  « tout fabriquer », et la façon dont le produit se vend vraiment.
+- Onglet **Explorer** (`/wsb explorer`) : les crafts de tout le jeu qui rapportent et se vendent, avec
+  des seuils de ventes par jour et de taux de vente. Demande TradeSkillMaster.
+- Onglet **Favoris** : les objets et crafts suivis avec l'étoile, et les objets récents.
 - `/wsb options` : ouvre les réglages. `/wsb reset` : recentre la fenêtre.
 
 Se connecter une fois avec chaque personnage pour que l'add-on sache quelles recettes il a apprises.

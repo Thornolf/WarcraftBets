@@ -817,6 +817,7 @@ function Window:Refresh()
     end
     if pageModules[state.tab] then
         pageModules[state.tab].Draw(widgets.pages[state.tab])
+        return
     end
     drawHeader(widgets)
 
@@ -876,6 +877,23 @@ function Window:ShowTab(tab)
     Window:Refresh()
 end
 
+--- Whether the window is open on the given tab.
+function Window:IsShowing(tab)
+    return frame ~= nil and frame:IsShown() and state.tab == tab
+end
+
+--- Opens the window on one of its tabs.
+function Window:OpenTab(tab)
+    if ns.Compat.InCombat() then
+        ns:Print(ns.L.IN_COMBAT)
+        return
+    end
+    frame = frame or build()
+    state.tab = tab
+    frame:Show()
+    Window:Refresh()
+end
+
 --- Closes the window if it is open, else opens it on the last hovered item.
 function Window:Toggle()
     if frame and frame:IsShown() then
@@ -895,6 +913,10 @@ end
 
 ns:RegisterCommand("", function()
     Window:Toggle()
+end)
+
+ns:RegisterCommand("explorer", function()
+    Window:OpenTab("explorer")
 end)
 
 ns:RegisterCommand("reset", function()

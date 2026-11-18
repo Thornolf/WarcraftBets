@@ -243,6 +243,7 @@ function helpers.newGame(locale)
         knownSpells = {},
         ranks = {},
         prices = {},
+        sales = {},
         missingTemplates = {},
         chatBox = {},
         chatBoxOpen = false,
@@ -370,12 +371,21 @@ function helpers.newGame(locale)
         end,
     }
     _G.TSM_API = {
-        -- Prices only: the fake has no regional sale data unless a spec adds some.
+        -- Market prices from game.prices; regional sale data from game.sales,
+        -- as { rate =, perDay =, average = } per item.
         GetCustomPriceValue = function(formula, itemString)
-            if formula:find("^DBRegion") then
+            local item = tonumber(itemString:match("%d+"))
+            local sales = game.sales[item] or {}
+            if formula == "DBRegionSaleRate*1000" then
+                return sales.rate and sales.rate * 1000
+            elseif formula == "DBRegionSoldPerDay*1000" then
+                return sales.perDay and sales.perDay * 1000
+            elseif formula == "DBRegionSaleAvg" then
+                return sales.average
+            elseif formula:find("^DBRegion") then
                 return nil
             end
-            return game.prices[tonumber(itemString:match("%d+"))]
+            return game.prices[item]
         end,
     }
     _G.Auctionator, _G.C_MerchantFrame, _G.TooltipDataProcessor, _G.Enum = nil, nil, nil, nil

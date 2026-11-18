@@ -101,7 +101,8 @@ end
 --- Filters of the craft list, in the order the filter button cycles them.
 View.FILTERS = { "all", "known", "alt", "unknown", "learnable" }
 
-local function passesFilter(status, filter)
+--- Whether a recipe with this learned status passes one of View.FILTERS.
+function View.PassesFilter(status, filter)
     if filter == "known" then
         return status.known
     elseif filter == "alt" then
@@ -127,7 +128,7 @@ function View.ListRows(item, search, filter)
     for _, use in ipairs(ns.Analysis.Uses(item)) do
         local name = View.RecipeName(use.recipe)
         local status = ns.Learned.Status(use.recipe)
-        if passesFilter(status, filter) and (not needle or name:lower():find(needle, 1, true)) then
+        if View.PassesFilter(status, filter) and (not needle or name:lower():find(needle, 1, true)) then
             local key = not use.sellable and "unsellable" or use.via or "direct"
             local group = groups[key]
             if not group then

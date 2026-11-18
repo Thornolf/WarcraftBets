@@ -1,6 +1,6 @@
 local ADDON, ns = ...
 
-ns.version = "1.1.0"
+ns.version = "2.0.0"
 
 local DEFAULT_SETTINGS = {
     priceSource = "auto",
@@ -11,6 +11,10 @@ local DEFAULT_SETTINGS = {
     tooltipShiftCount = 5,
     tooltipEnabled = true,
     costMode = "mine",
+    explorerFilter = "known",
+    explorerMinPerDay = 1,
+    explorerMinRate = 20,
+    explorerSort = "profit",
 }
 
 local activeLocale = ns.locales[GetLocale()] or ns.locales.enUS
@@ -100,7 +104,7 @@ end
 local function printHelp()
     local L = ns.L
     ns:Print(L.HELP_HEADER:format(ns.version))
-    for _, key in ipairs({ "HELP_OPEN", "HELP_ITEM", "HELP_OPTIONS", "HELP_RESET" }) do
+    for _, key in ipairs({ "HELP_OPEN", "HELP_ITEM", "HELP_EXPLORER", "HELP_OPTIONS", "HELP_RESET" }) do
         ns:Print(L[key])
     end
 end

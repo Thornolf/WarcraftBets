@@ -3,7 +3,7 @@
 ## Notes: Every craft an item is used in, learned or not, with auction house profit.
 ## Notes-frFR: Tous les crafts qui utilisent un objet, appris ou non, avec le profit à l'hôtel des ventes.
 ## Author: Thornolf
-## Version: 1.1.0
+## Version: 2.0.0
 ## SavedVariables: WarcraftBetsDB
 ## OptionalDeps: TradeSkillMaster, Auctionator
 
@@ -23,7 +23,9 @@ Shopping.lua
 History.lua
 Favorites.lua
 Tooltip.lua
+Explorer.lua
 UI/Widgets.lua
 UI/Window.lua
 UI/Favorites.lua
 UI/Settings.lua
+UI/Explorer.lua

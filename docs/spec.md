@@ -116,6 +116,50 @@ Comportement :
 - Échap ferme la fenêtre.
 - La fenêtre se ferme à l'entrée en combat et ne s'ouvre pas pendant un combat.
 
+## Version 2 : onglets
+
+La fenêtre a trois onglets sous son titre. Un champ « Objet », à droite des onglets, ouvre un objet
+par son nom ou son lien et liste les dix derniers objets ouverts quand il a le focus.
+
+### Objet
+
+L'étude d'un objet décrite plus haut, avec en plus :
+
+- Une case d'objet en haut à gauche : y glisser un objet l'ouvre. Fenêtre ouverte et zone de saisie
+  du chat fermée, Maj+clic sur un objet l'ouvre aussi.
+- Une étoile à côté de l'objet et du craft sélectionné pour les suivre.
+- Un sélecteur « Calcul » qui fixe comment le coût des composants est compté :
+  - **Pour moi** (défaut) : un composant est fabriqué seulement si un des personnages du compte
+    connaît la recette, sinon il est acheté.
+  - **Tout acheter** : aucun composant n'est fabriqué.
+  - **Tout fabriquer** : toute recette peut servir.
+  Le mode pilote le classement, l'infobulle, la liste d'achat et le lien dans le chat. La liste des
+  crafts, elle, suit toujours toutes les chaînes.
+- Le détail montre le profit des trois modes côte à côte, les deux prix de chaque composant
+  fabricable (celui que le mode utilise en blanc, « fabriquer » en vert si la recette est connue), et
+  un bloc « Est-ce que ça se vend ? » : ventes par jour, taux de vente et moyenne des ventes de la
+  région selon TSM, plus l'offre la moins chère. Le bloc est masqué sans ces données.
+
+### Explorer
+
+Un classement des crafts de tout le jeu qui rapportent et se vendent vraiment. Demande TSM.
+
+- Prix de vente retenu : le plus bas entre la moyenne des ventes de la région et le prix TSM choisi.
+- Filtres : recettes (apprises par ce personnage par défaut), mode de calcul, ventes par jour minimum
+  (1 par défaut), taux de vente minimum (20 % par défaut).
+- Sont écartés et comptés en bas du tableau : les crafts qui ne se vendent pas assez, ceux sans prix
+  ou sans données de vente, ceux à perte. Les crafts invendables sont ignorés.
+- Tri par profit par craft, ou par profit par jour (profit × ventes par jour ÷ rendement) en cliquant
+  l'en-tête.
+- Le calcul est étalé sur plusieurs images, 25 recettes à la fois, et ne tourne que si l'onglet est
+  affiché.
+- Un clic sur une ligne ouvre l'onglet Objet sur le premier composant du craft, craft sélectionné.
+
+### Favoris
+
+Les objets suivis avec leur meilleur craft, les crafts suivis avec leur profit, et les objets
+récents. Un clic ouvre l'onglet Objet. Favoris et récents sont sauvegardés par compte.
+
 ## Moteur de calcul
 
 Le moteur est du Lua pur, sans appel à l'API du jeu, testé hors du jeu avec busted.
@@ -193,7 +237,11 @@ Seul le moteur fait les calculs ; l'infobulle et la fenêtre affichent ce qu'il 
 | `View.lua` | Lignes de l'infobulle et de la liste, sans cadre |
 | `Shopping.lua` | Liste de courses Auctionator |
 | `Tooltip.lua` | Accroche de l'infobulle |
-| `UI/Window.lua` | Fenêtre à deux panneaux |
+| `History.lua`, `Favorites.lua` | Objets récents, objets et crafts suivis |
+| `Explorer.lua` | Classement étalé des crafts qui se vendent |
+| `UI/Widgets.lua` | Briques d'interface communes |
+| `UI/Window.lua` | Fenêtre, onglets et onglet Objet |
+| `UI/Explorer.lua`, `UI/Favorites.lua` | Onglets Explorer et Favoris |
 | `UI/Settings.lua` | Panneau de réglages |
 | `tools/` | Script de génération des recettes |
 | `spec/` | Tests busted |
