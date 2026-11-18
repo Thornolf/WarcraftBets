@@ -292,3 +292,50 @@ function View.ChatText(use)
     end
     return L.CHAT_PROFIT:format(subject, amount(use.cost), amount(use.revenue), amount(use.profit))
 end
+
+--- Rows of the favourites tab for followed items: each with its best
+--- sellable craft and that craft's profit per unit of the item.
+function View.FavoriteItemRows()
+    local L = ns.L
+    local rows = {}
+    for _, favorite in ipairs(ns.Favorites.Items()) do
+        local row = { item = favorite.item, name = ns.Compat.ItemName(favorite.item) or L.LOADING }
+        for _, use in ipairs(ns.Analysis.Uses(favorite.item)) do
+            if use.sellable then
+                row.detail = View.RecipeName(use.recipe)
+                row.profit, row.profitColor = View.ProfitText(use.profitPerUnit)
+                break
+            end
+        end
+        row.detail = row.detail or L.NO_USES
+        table.insert(rows, row)
+    end
+    return rows
+end
+
+--- Rows of the favourites tab for followed crafts, with the profit per craft.
+function View.FavoriteCraftRows()
+    local rows = {}
+    local index = ns.Analysis.Index()
+    for _, favorite in ipairs(ns.Favorites.Crafts()) do
+        local recipe = index.byId[favorite.recipe]
+        -- A recipe can disappear from the data between game patches.
+        if recipe then
+            local economics = ns.Analysis.Engine():Profit(recipe)
+            local row = {
+                recipe = favorite.recipe,
+                item = favorite.item,
+                product = recipe.product,
+                name = View.RecipeName(recipe),
+                detail = ns.Learned.ProfessionName(recipe.skill),
+            }
+            if economics.sellable then
+                row.profit, row.profitColor = View.ProfitText(economics.profit)
+            else
+                row.profit, row.profitColor = ns.L.NOT_SELLABLE, GREY
+            end
+            table.insert(rows, row)
+        end
+    end
+    return rows
+end

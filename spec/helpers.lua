@@ -102,6 +102,10 @@ function widgetMethods:SetTexture(texture)
     self.texture = texture
 end
 
+function widgetMethods:SetTexCoord(left, right, top, bottom)
+    self.texCoord = { left, right, top, bottom }
+end
+
 function widgetMethods:SetDesaturated(desaturated)
     self.desaturated = desaturated
 end

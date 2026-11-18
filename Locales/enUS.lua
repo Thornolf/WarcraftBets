@@ -101,6 +101,15 @@ ns.locales.enUS = {
     COLUMN_CRAFT = "Craft",
     COLUMN_PROFIT_PER = "Profit per %s",
 
+    FAVORITE_ITEMS = "Followed items",
+    FAVORITE_ITEMS_HINT = "Best craft, profit per unit",
+    FAVORITE_CRAFTS = "Followed crafts",
+    FAVORITE_CRAFTS_HINT = "Profit per craft",
+    FAVORITES_EMPTY = "Click the star next to an item or a craft to follow it.",
+    FAVORITES_MORE = "+%d more",
+    STAR_ADD = "Add to favourites",
+    STAR_REMOVE = "Remove from favourites",
+
     -- Used when the client cannot name a profession itself.
     PROFESSION_40 = "Poisons",
     PROFESSION_129 = "First Aid",

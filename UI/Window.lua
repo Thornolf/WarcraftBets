@@ -30,17 +30,30 @@ local GREEN = { 0.12, 1, 0 }
 local frame
 local state = { tab = "item", search = "", filter = "all", rows = {}, offset = 0 }
 
-local function label(parent, font, justify)
-    local text = parent:CreateFontString(nil, "ARTWORK", font)
-    text:SetJustifyH(justify or "LEFT")
-    text:SetWordWrap(false)
-    return text
+local label, colorTexture = ns.Widgets.Label, ns.Widgets.ColorTexture
+
+-- Tab pages kept in their own files: each has Build(page) and Draw(page).
+local pageModules = {}
+
+--- Registers the module that builds and draws one tab's page.
+function Window:RegisterPage(tab, module)
+    pageModules[tab] = module
 end
 
-local function colorTexture(parent, layer, r, g, b, a)
-    local texture = parent:CreateTexture(nil, layer)
-    texture:SetColorTexture(r, g, b, a)
-    return texture
+local function starTooltip(button)
+    GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
+    GameTooltip:AddLine(button.starred and ns.L.STAR_REMOVE or ns.L.STAR_ADD, 1, 1, 1)
+    GameTooltip:Show()
+end
+
+local function starButton(parent, size, onClick)
+    local button = ns.Widgets.StarButton(parent, size)
+    button:SetScript("OnClick", onClick)
+    button:SetScript("OnEnter", starTooltip)
+    button:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    return button
 end
 
 local function place(target)
@@ -167,8 +180,13 @@ local function buildHeader(parent, widgets)
         ns.Prices.ToggleFormulaPreset()
     end)
 
+    widgets.itemStar = starButton(parent, 18, function()
+        ns.Favorites.ToggleItem(state.item)
+    end)
+    widgets.itemStar:SetPoint("TOPLEFT", slot, "TOPRIGHT", 8, -2)
+
     widgets.name = label(parent, "GameFontNormalLarge")
-    widgets.name:SetPoint("TOPLEFT", slot, "TOPRIGHT", 10, -3)
+    widgets.name:SetPoint("TOPLEFT", widgets.itemStar, "TOPRIGHT", 4, -1)
     widgets.name:SetPoint("RIGHT", widgets.formulaButton, "LEFT", -10, 0)
 
     widgets.summary = label(parent, "GameFontHighlightSmall")
@@ -320,9 +338,13 @@ local function buildDetail(parent, widgets)
     detail.icon = detail:CreateTexture(nil, "ARTWORK")
     detail.icon:SetSize(40, 40)
     detail.icon:SetPoint("TOPLEFT", detail, "TOPLEFT", 0, 0)
+    detail.star = starButton(detail, 18, function()
+        ns.Favorites.ToggleCraft(detail.use.recipe.id, state.item)
+    end)
+    detail.star:SetPoint("TOPRIGHT", detail, "TOPRIGHT", 0, 0)
     detail.name = label(detail, "GameFontNormalLarge")
     detail.name:SetPoint("TOPLEFT", detail.icon, "TOPRIGHT", 10, 0)
-    detail.name:SetPoint("RIGHT", detail, "RIGHT", 0, 0)
+    detail.name:SetPoint("RIGHT", detail.star, "LEFT", -6, 0)
     detail.skill = label(detail, "GameFontHighlightSmall")
     detail.skill:SetPoint("TOPLEFT", detail.name, "BOTTOMLEFT", 0, -3)
     detail.state = label(detail, "GameFontHighlightSmall")
@@ -421,10 +443,14 @@ local function buildTabs(parent, widgets)
         page:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", 0, 0)
         widgets.pages[tab] = page
     end
-    for _, tab in ipairs({ "explorer", "favorites" }) do
-        local soon = label(widgets.pages[tab], "GameFontDisable", "CENTER")
-        soon:SetPoint("CENTER", widgets.pages[tab], "CENTER", 0, 0)
-        soon:SetText(ns.L.TAB_COMING)
+    for tab, page in pairs(widgets.pages) do
+        if pageModules[tab] then
+            pageModules[tab].Build(page)
+        elseif tab ~= "item" then
+            local soon = label(page, "GameFontDisable", "CENTER")
+            soon:SetPoint("CENTER", page, "CENTER", 0, 0)
+            soon:SetText(ns.L.TAB_COMING)
+        end
     end
 end
 
@@ -466,8 +492,11 @@ local function buildItemField(parent, widgets)
         row:SetPoint("TOPLEFT", recents, "TOPLEFT", 4, -22 - (position - 1) * RECENT_ROW_HEIGHT)
         row:SetPoint("RIGHT", recents, "RIGHT", -4, 0)
         row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+        row.star = row:CreateTexture(nil, "ARTWORK")
+        row.star:SetSize(12, 12)
+        row.star:SetPoint("LEFT", row, "LEFT", 2, 0)
         row.name = label(row, "GameFontHighlightSmall")
-        row.name:SetPoint("LEFT", row, "LEFT", 4, 0)
+        row.name:SetPoint("LEFT", row.star, "RIGHT", 4, 0)
         row.name:SetPoint("RIGHT", row, "RIGHT", -4, 0)
         row:SetScript("OnClick", function(self)
             field:ClearFocus()
@@ -490,6 +519,7 @@ local function buildItemField(parent, widgets)
             row:SetShown(item ~= nil)
             if item then
                 row.name:SetText(ns.Compat.ItemName(item) or ns.L.LOADING)
+                ns.Widgets.SetStar(row.star, ns.Favorites.HasItem(item))
             end
         end
         recents:SetHeight(28 + #items * RECENT_ROW_HEIGHT)
@@ -570,6 +600,7 @@ local function drawHeader(widgets)
     widgets.formulaButton:SetText(ns.View.FormulaLabel())
     widgets.formulaButton:SetShown(ns.Prices.IsAvailable("tsm"))
     widgets.filter:SetText(L["FILTER_" .. state.filter])
+    widgets.itemStar:SetShown(item ~= nil)
     if not item then
         widgets.slot.icon:SetTexture("Interface\\PaperDoll\\UI-Backpack-EmptySlot")
         widgets.name:SetText(L.NO_ITEM)
@@ -582,6 +613,7 @@ local function drawHeader(widgets)
     widgets.slot.icon:SetTexture(Compat.ItemIcon(item))
     widgets.name:SetText(name)
     widgets.profitColumn:SetText(L.COLUMN_PROFIT_PER:format(name))
+    widgets.itemStar:SetStarred(ns.Favorites.HasItem(item))
     if not widgets.itemField:HasFocus() then
         widgets.itemField:SetText(name)
     end
@@ -649,6 +681,7 @@ local function drawDetail(widgets, selectedRow)
     detail.icon:SetTexture(product and Compat.ItemIcon(product) or Compat.SpellIcon(use.recipe.id))
     detail.icon:SetDesaturated(not view.known)
     detail.name:SetText(view.name)
+    detail.star:SetStarred(ns.Favorites.HasCraft(use.recipe.id))
     detail.skill:SetText(view.skill)
     detail.state:SetText(view.state)
     detail.state:SetTextColor(unpack(view.stateColor))
@@ -698,6 +731,9 @@ function Window:Refresh()
             widgets.tabs[tab]:UnlockHighlight()
         end
     end
+    if pageModules[state.tab] then
+        pageModules[state.tab].Draw(widgets.pages[state.tab])
+    end
     drawHeader(widgets)
 
     state.rows = state.item and ns.View.ListRows(state.item, state.search, state.filter) or {}
@@ -729,7 +765,8 @@ function Window:Refresh()
 end
 
 --- Opens the window on an item, or on the item it last showed when nil.
-function Window:Open(item)
+--- `recipe` selects one of the item's crafts.
+function Window:Open(item, recipe)
     if ns.Compat.InCombat() then
         ns:Print(ns.L.IN_COMBAT)
         return
@@ -744,6 +781,7 @@ function Window:Open(item)
         frame.widgets.search:SetText("")
         state.search = ""
     end
+    state.selected = recipe or state.selected
     frame:Show()
     Window:Refresh()
 end
@@ -819,5 +857,9 @@ ns:OnMessage("ANALYSIS_CHANGED", function()
 end)
 
 ns:OnMessage("LEARNED_CHANGED", function()
+    Window:Refresh()
+end)
+
+ns:OnMessage("FAVORITES_CHANGED", function()
     Window:Refresh()
 end)

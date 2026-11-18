@@ -81,6 +81,9 @@ ns:On("ADDON_LOADED", function(name)
     db.chars = db.chars or {}
     db.vendor = db.vendor or {}
     db.recents = db.recents or {}
+    db.favorites = db.favorites or {}
+    db.favorites.items = db.favorites.items or {}
+    db.favorites.crafts = db.favorites.crafts or {}
     ns.db = db
     ns:Fire("READY")
 end)
