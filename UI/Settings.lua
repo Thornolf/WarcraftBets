@@ -4,7 +4,7 @@ local SettingsWindow = {}
 ns.SettingsWindow = SettingsWindow
 
 local FRAME_NAME = "WarcraftBetsSettingsFrame"
-local WIDTH, HEIGHT = 420, 300
+local WIDTH, HEIGHT = 420, 332
 local MARGIN, FIRST_ROW, ROW_HEIGHT = 20, 40, 32
 local VALUE_COLUMN = 250
 local PRICE_SOURCES = { "auto", "tsm", "auctionator" }
@@ -109,12 +109,19 @@ local function build()
         end
     end)
 
-    rowLabel(window, 3, L.OPTION_FORMULA)
+    rowLabel(window, 3, L.OPTION_TSM_PRICE)
+    controls.preset = button(window, 130, "")
+    valueAnchor(controls.preset, window, 3)
+    controls.preset:SetScript("OnClick", function()
+        ns.Prices.ToggleFormulaPreset()
+    end)
+
+    rowLabel(window, 4, L.OPTION_FORMULA)
     controls.formula = Compat.CreateFrame("EditBox", nil, window, "InputBoxTemplate")
     controls.formula:SetSize(130, 20)
     controls.formula:SetAutoFocus(false)
     controls.formula:SetFontObject("ChatFontNormal")
-    valueAnchor(controls.formula, window, 3)
+    valueAnchor(controls.formula, window, 4)
     local function commitFormula(self)
         local text = (self:GetText() or ""):match("^%s*(.-)%s*$")
         if text ~= "" and text ~= ns.db.settings.tsmFormula then
@@ -131,7 +138,7 @@ local function build()
 
     controls.steppers = {}
     for position, option in ipairs(STEPPERS) do
-        controls.steppers[option.key] = buildStepper(window, 3 + position, option)
+        controls.steppers[option.key] = buildStepper(window, 4 + position, option)
     end
 
     window:SetScript("OnShow", function()
@@ -149,6 +156,7 @@ function SettingsWindow:Refresh()
     local settings, controls = ns.db.settings, frame.controls
     controls.tooltip:SetChecked(settings.tooltipEnabled)
     controls.source:SetText(ns.L["SOURCE_" .. settings.priceSource])
+    controls.preset:SetText(ns.View.FormulaLabel())
     if not controls.formula:HasFocus() then
         controls.formula:SetText(settings.tsmFormula)
     end

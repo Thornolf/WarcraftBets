@@ -78,11 +78,17 @@ ns.locales.enUS = {
     OPTIONS_OPEN = "Open the WarcraftBets settings",
     OPTION_TOOLTIP = "Show crafts on item tooltips",
     OPTION_SOURCE = "Price source",
-    OPTION_FORMULA = "TSM price formula",
+    OPTION_FORMULA = "Custom TSM formula",
     OPTION_CUT = "Auction house fee (%)",
     OPTION_DEPTH = "Craft chain depth",
     OPTION_COUNT = "Crafts in the tooltip",
     OPTION_SHIFT_COUNT = "Crafts in the tooltip with Shift",
+
+    FORMULA_DBMarket = "Market value",
+    FORMULA_DBMinBuyout = "Min buyout",
+    FORMULA_CUSTOM = "Custom formula",
+    SOURCE_TSM_PRICE = "%s (%s)",
+    OPTION_TSM_PRICE = "TSM price",
 
     -- Used when the client cannot name a profession itself.
     PROFESSION_40 = "Poisons",

@@ -52,6 +52,27 @@ function Prices.Auction(itemID)
     return nil
 end
 
+local TSM_PRESETS = { "DBMarket", "DBMinBuyout" }
+
+--- Which TSM price the formula setting stands for: "DBMarket" (14-day market
+--- value), "DBMinBuyout" (cheapest auction of the last scan), or nil for a
+--- custom formula. TSM reads formulas without regard to case.
+function Prices.FormulaPreset()
+    local formula = ns.db.settings.tsmFormula:lower()
+    for _, preset in ipairs(TSM_PRESETS) do
+        if preset:lower() == formula then
+            return preset
+        end
+    end
+    return nil
+end
+
+--- Switches between market value and minimum buyout. A custom formula goes
+--- back to the market value.
+function Prices.ToggleFormulaPreset()
+    ns:Set("tsmFormula", Prices.FormulaPreset() == "DBMarket" and "DBMinBuyout" or "DBMarket")
+end
+
 --- Whether the add-on behind a price source is loaded.
 function Prices.IsAvailable(source)
     if source == "tsm" then

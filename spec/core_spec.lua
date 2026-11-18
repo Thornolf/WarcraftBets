@@ -14,6 +14,14 @@ describe("core", function()
         end
     end)
 
+    it("carries the version written in the TOC", function()
+        local tocVersion
+        for line in io.lines("WarcraftBets.toc") do
+            tocVersion = tocVersion or line:match("^## Version: (%S+)")
+        end
+        assert.are.equal(tocVersion, ns.version)
+    end)
+
     it("uses the client language and falls back to English", function()
         assert.are.equal("/wsb : ouvre ou ferme la fenêtre", ns.L.HELP_OPEN)
         ns.locales.frFR.HELP_OPEN = nil
@@ -47,7 +55,7 @@ describe("core", function()
     it("prints help for a bare command until a module takes it over", function()
         _G.SlashCmdList.WARCRAFTBETS("")
         assert.are.equal(5, #game.chat)
-        assert.is_truthy(game.chat[1]:find("1.0.0", 1, true))
+        assert.is_truthy(game.chat[1]:find("1.1.0", 1, true))
     end)
 
     it("routes sub-commands and free text", function()

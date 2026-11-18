@@ -242,18 +242,34 @@ function View.Detail(use, item)
     return detail
 end
 
+--- Name of the TSM price in use: market value, minimum buyout or a custom formula.
+function View.FormulaLabel()
+    local preset = ns.Prices.FormulaPreset()
+    return preset and ns.L["FORMULA_" .. preset] or ns.L.FORMULA_CUSTOM
+end
+
+local function sourceName(source)
+    local name = ns.L["SOURCE_" .. source]
+    if source == "tsm" then
+        return ns.L.SOURCE_TSM_PRICE:format(name, View.FormulaLabel())
+    end
+    return name
+end
+
 --- One sentence on where auction prices come from, for the detail panel.
 function View.PriceSourceText()
     local L, Prices = ns.L, ns.Prices
     local setting = ns.db.settings.priceSource
     if setting ~= "auto" then
-        local name = L["SOURCE_" .. setting]
-        return Prices.IsAvailable(setting) and name or L.SOURCE_MISSING:format(name)
+        if Prices.IsAvailable(setting) then
+            return sourceName(setting)
+        end
+        return L.SOURCE_MISSING:format(L["SOURCE_" .. setting])
     end
     local available = {}
     for _, source in ipairs({ "tsm", "auctionator" }) do
         if Prices.IsAvailable(source) then
-            table.insert(available, L["SOURCE_" .. source])
+            table.insert(available, sourceName(source))
         end
     end
     if #available == 0 then

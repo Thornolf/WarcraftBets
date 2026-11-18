@@ -78,11 +78,17 @@ ns.locales.frFR = {
     OPTIONS_OPEN = "Ouvrir les réglages de WarcraftBets",
     OPTION_TOOLTIP = "Afficher les crafts dans l'infobulle des objets",
     OPTION_SOURCE = "Source de prix",
-    OPTION_FORMULA = "Formule de prix TSM",
+    OPTION_FORMULA = "Formule TSM perso",
     OPTION_CUT = "Commission HV (%)",
     OPTION_DEPTH = "Profondeur des chaînes",
     OPTION_COUNT = "Crafts dans l'infobulle",
     OPTION_SHIFT_COUNT = "Crafts dans l'infobulle avec Maj",
+
+    FORMULA_DBMarket = "Valeur du marché",
+    FORMULA_DBMinBuyout = "Rachat min",
+    FORMULA_CUSTOM = "Formule perso",
+    SOURCE_TSM_PRICE = "%s (%s)",
+    OPTION_TSM_PRICE = "Prix TSM",
 
     -- Used when the client cannot name a profession itself.
     PROFESSION_40 = "Poisons",

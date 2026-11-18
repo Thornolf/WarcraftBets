@@ -55,6 +55,22 @@ describe("settings window", function()
         assert.are.equal("auto", ns.db.settings.priceSource)
     end)
 
+    it("switches the TSM price between market value and minimum buyout", function()
+        assert.are.equal("Market value", controls().preset:GetText())
+        controls().preset:Run("OnClick")
+        assert.are.equal("DBMinBuyout", ns.db.settings.tsmFormula)
+        assert.are.equal("Min buyout", controls().preset:GetText())
+        assert.are.equal("DBMinBuyout", controls().formula:GetText())
+        controls().preset:Run("OnClick")
+        assert.are.equal("DBMarket", ns.db.settings.tsmFormula)
+    end)
+
+    it("shows a typed formula as custom", function()
+        controls().formula:SetText("DBRegionMarketAvg")
+        controls().formula:Run("OnEnterPressed")
+        assert.are.equal("Custom formula", controls().preset:GetText())
+    end)
+
     it("keeps the auction house fee between 5 and 15 percent", function()
         local stepper = controls().steppers.cut
         stepper.less:Run("OnClick")

@@ -1,6 +1,6 @@
 local ADDON, ns = ...
 
-ns.version = "1.0.0"
+ns.version = "1.1.0"
 
 local DEFAULT_SETTINGS = {
     priceSource = "auto",

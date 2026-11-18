@@ -129,13 +129,20 @@ local function buildHeader(parent, widgets)
         ns:Set("priceSource", cycle(PRICE_SOURCES, ns.db.settings.priceSource))
     end)
 
+    widgets.formulaButton = ns.Compat.CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+    widgets.formulaButton:SetSize(170, 22)
+    widgets.formulaButton:SetPoint("RIGHT", widgets.sourceButton, "LEFT", -6, 0)
+    widgets.formulaButton:SetScript("OnClick", function()
+        ns.Prices.ToggleFormulaPreset()
+    end)
+
     widgets.name = label(parent, "GameFontNormalLarge")
     widgets.name:SetPoint("TOPLEFT", widgets.icon, "TOPRIGHT", 10, -2)
-    widgets.name:SetPoint("RIGHT", widgets.sourceButton, "LEFT", -10, 0)
+    widgets.name:SetPoint("RIGHT", widgets.formulaButton, "LEFT", -10, 0)
 
     widgets.summary = label(parent, "GameFontHighlightSmall")
     widgets.summary:SetPoint("BOTTOMLEFT", widgets.icon, "BOTTOMRIGHT", 10, 2)
-    widgets.summary:SetPoint("RIGHT", widgets.sourceButton, "LEFT", -10, 0)
+    widgets.summary:SetPoint("RIGHT", widgets.formulaButton, "LEFT", -10, 0)
 end
 
 local function buildFilters(parent, widgets)
@@ -400,6 +407,8 @@ local function drawHeader(widgets)
     local L, Compat = ns.L, ns.Compat
     local item = state.item
     widgets.sourceButton:SetText(L.PRICE_BUTTON:format(L["SOURCE_" .. ns.db.settings.priceSource]))
+    widgets.formulaButton:SetText(ns.View.FormulaLabel())
+    widgets.formulaButton:SetShown(ns.Prices.IsAvailable("tsm"))
     widgets.filter:SetText(L["FILTER_" .. state.filter])
     if not item then
         widgets.icon:SetTexture(nil)

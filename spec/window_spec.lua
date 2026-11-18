@@ -285,7 +285,7 @@ describe("window", function()
         end)
 
         it("names the price source", function()
-            assert.are.equal("TSM", widgets().detail.source:GetText())
+            assert.are.equal("TSM (Market value)", widgets().detail.source:GetText())
         end)
 
         it("opens the window on a reagent that is clicked", function()
@@ -450,6 +450,54 @@ describe("window", function()
             assert.are.equal("?", rowNamed("Copper Chain Belt").profit:GetText())
             button:Run("OnClick")
             assert.are.equal("Prices: Auto", button:GetText())
+        end)
+    end)
+
+    describe("TSM price button", function()
+        local minBuyout
+
+        before_each(function()
+            minBuyout = { [items.ORE] = 500, [items.BAR] = 700, [items.BELT] = 9000 }
+            _G.TSM_API.GetCustomPriceValue = function(formula, itemString)
+                local item = tonumber(itemString:match("%d+"))
+                if formula == "DBMinBuyout" then
+                    return minBuyout[item]
+                end
+                return game.prices[item]
+            end
+            slash("Copper Ore")
+        end)
+
+        it("switches between market value and minimum buyout and recomputes profits", function()
+            local button = widgets().formulaButton
+            assert.are.equal("Market value", button:GetText())
+            assert.are.equal("+13s", plain(rowNamed("Copper Chain Belt").profit:GetText()))
+            button:Run("OnClick")
+            assert.are.equal("DBMinBuyout", ns.db.settings.tsmFormula)
+            assert.are.equal("Min buyout", button:GetText())
+            assert.are.equal("+9s 25c", plain(rowNamed("Copper Chain Belt").profit:GetText()))
+            assert.are.equal("TSM, raw 5s     Transformed (Copper Bar) 7s", plain(widgets().summary:GetText()))
+            button:Run("OnClick")
+            assert.are.equal("DBMarket", ns.db.settings.tsmFormula)
+            assert.are.equal("+13s", plain(rowNamed("Copper Chain Belt").profit:GetText()))
+        end)
+
+        it("shows a question mark for an item with no auction right now", function()
+            widgets().formulaButton:Run("OnClick")
+            assert.are.equal("?", rowNamed("Copper Tube").profit:GetText())
+        end)
+
+        it("says when a custom formula is in use and goes back to market value on click", function()
+            ns:Set("tsmFormula", "min(DBMarket, DBRegionMarketAvg)")
+            assert.are.equal("Custom formula", widgets().formulaButton:GetText())
+            widgets().formulaButton:Run("OnClick")
+            assert.are.equal("DBMarket", ns.db.settings.tsmFormula)
+        end)
+
+        it("is hidden without TSM", function()
+            _G.TSM_API = nil
+            ns:Set("priceSource", "auto")
+            assert.is_false(widgets().formulaButton:IsShown())
         end)
     end)
 

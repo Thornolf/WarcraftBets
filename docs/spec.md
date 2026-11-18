@@ -84,7 +84,7 @@ Règles :
 Elle s'ouvre par `/wsb`, `/wb`, ou `/wsb <objet>` (lien ou nom).
 
 En-tête : icône et nom de l'objet étudié, prix brut et valeurs transformées, choix de la source de
-prix (Auto / TSM / Auctionator).
+prix (Auto / TSM / Auctionator) et, si TSM est chargé, bascule entre valeur du marché et rachat min.
 
 Panneau gauche, la liste des crafts :
 
@@ -158,7 +158,8 @@ prix, sinon Auctionator.
 | Réglage | Valeurs | Défaut |
 | --- | --- | --- |
 | Source de prix | Auto / TSM / Auctionator | Auto |
-| Formule TSM | Texte libre | `DBMarket` |
+| Prix TSM | Valeur du marché (`DBMarket`, moyenne sur 14 jours) / Rachat min (`DBMinBuyout`, offre la moins chère du dernier scan) | Valeur du marché |
+| Formule TSM perso | Texte libre, remplace le choix ci-dessus | aucune |
 | Commission HV | 5 % à 15 % | 5 % |
 | Profondeur des chaînes | 1 à 5 | 3 |
 | Crafts dans l'infobulle | Par défaut / avec Maj | 2 / 5 |
