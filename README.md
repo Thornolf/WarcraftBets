@@ -8,8 +8,9 @@ not, and what each is worth at the auction house. A dedicated window (`/wsb`) sh
 
 ## Installation
 
-1. Copier ce dossier dans `World of Warcraft/_forever_/Interface/AddOns/` sous le nom `WarcraftBets`
-   (le fichier `WarcraftBets.toc` doit se trouver directement dans `AddOns/WarcraftBets/`).
+1. Télécharger `WarcraftBets.zip` depuis la [dernière release](https://github.com/Thornolf/WarcraftBets/releases/latest)
+   et le décompresser dans `World of Warcraft/_forever_/Interface/AddOns/` (le fichier
+   `WarcraftBets.toc` doit se trouver directement dans `AddOns/WarcraftBets/`).
 2. Installer TradeSkillMaster ou Auctionator pour les prix (les deux sont facultatifs, l'un des deux est
    nécessaire pour voir des profits).
 3. Relancer le jeu ou taper `/reload`.
@@ -29,6 +30,7 @@ Si une recette apprise reste grisée, ouvrir la fenêtre du métier concerné.
 - `make lint test` : luacheck et tests busted (Lua 5.1).
 - `make data` : régénère `Data/Recipes.lua` depuis les tables du client publiées par wago.tools.
 - `make zip` : crée `dist/WarcraftBets.zip`, prêt à décompresser dans `AddOns`.
+- Pousser un tag `vX.Y.Z` égal à la version du `.toc` publie une release GitHub avec ce zip.
 
 La spécification est dans [`docs/spec.md`](docs/spec.md).
 
