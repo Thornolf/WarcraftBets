@@ -30,7 +30,8 @@ Si une recette apprise reste grisée, ouvrir la fenêtre du métier concerné.
 - `make lint test` : luacheck et tests busted (Lua 5.1).
 - `make data` : régénère `Data/Recipes.lua` depuis les tables du client publiées par wago.tools.
 - `make zip` : crée `dist/WarcraftBets.zip`, prêt à décompresser dans `AddOns`.
-- Pousser un tag `vX.Y.Z` égal à la version du `.toc` publie une release GitHub avec ce zip.
+- Lancer le workflow `release` depuis l'onglet Actions, ou pousser un tag `vX.Y.Z` égal à la version du
+  `.toc`, publie une release GitHub avec ce zip.
 
 La spécification est dans [`docs/spec.md`](docs/spec.md).
 

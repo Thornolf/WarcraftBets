@@ -1,9 +1,12 @@
 name: release
 
+# Publishes the version written in the TOC. Runs when a matching tag is pushed,
+# or by hand from the Actions tab, in which case the release creates the tag.
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -14,13 +17,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check the tag matches the TOC version
+      - name: Read the version from the TOC
+        id: version
         run: |
           toc_version="$(sed -n 's/^## Version: //p' WarcraftBets.toc | tr -d '\r')"
-          if [ "v${toc_version}" != "${GITHUB_REF_NAME}" ]; then
+          tag="v${toc_version}"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ] && [ "${GITHUB_REF_NAME}" != "${tag}" ]; then
             echo "Tag ${GITHUB_REF_NAME} does not match TOC version ${toc_version}" >&2
             exit 1
           fi
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
 
       - name: Build the zip
         run: make zip
@@ -28,4 +34,9 @@ jobs:
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" dist/WarcraftBets.zip --title "WarcraftBets ${GITHUB_REF_NAME}" --generate-notes
+          TAG: ${{ steps.version.outputs.tag }}
+        run: >
+          gh release create "${TAG}" dist/WarcraftBets.zip
+          --target "${GITHUB_SHA}"
+          --title "WarcraftBets ${TAG}"
+          --generate-notes
