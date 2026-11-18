@@ -7,6 +7,7 @@ describe("window", function()
     local game, ns, slash
 
     local function plain(text)
+        text = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
         return (text:gsub("|T.-UI%-(%a)%a+Icon.-|t", function(initial)
             return initial:lower()
         end))
@@ -479,7 +480,7 @@ describe("window", function()
             rowNamed("Copper Chain Belt"):Run("OnClick", "LeftButton")
             local reagents = widgets().detail.reagents
             assert.are.equal("Copper Bar x6", reagents[1].label:GetText())
-            assert.are.equal("36s  crafted", plain(reagents[1].cost:GetText()))
+            assert.are.equal("buy 48s  ·  craft 36s", plain(reagents[1].cost:GetText()))
             assert.is_true(reagents[1]:IsShown())
             assert.is_false(reagents[2]:IsShown())
         end)
@@ -487,11 +488,47 @@ describe("window", function()
         it("breaks the profit down", function()
             rowNamed("Copper Chain Belt"):Run("OnClick", "LeftButton")
             local economics = widgets().detail.economics
-            assert.are.equal("Net profit", economics[4].label:GetText())
-            assert.are.equal("+78s", plain(economics[4].value:GetText()))
-            assert.are.equal("GameFontNormal", economics[4].value.font)
+            assert.are.equal("Profit per craft", economics[4].label:GetText())
+            assert.are.equal("+78s", plain(economics[4].values[3]:GetText()))
             assert.are.equal("Profit per Copper Ore", economics[5].label:GetText())
-            assert.are.equal("+13s", plain(economics[5].value:GetText()))
+            assert.are.equal("+13s", plain(economics[5].values[3]:GetText()))
+        end)
+
+        it("shows the three cost modes side by side and stresses the active one", function()
+            rowNamed("Copper Chain Belt"):Run("OnClick", "LeftButton")
+            local detail = widgets().detail
+            assert.are.equal("For me", detail.modeHeaders[1]:GetText())
+            assert.are.equal("Buy all", detail.modeHeaders[2]:GetText())
+            assert.are.equal("Craft all", detail.modeHeaders[3]:GetText())
+            assert.are.same(ns.View.colors.title, detail.modeHeaders[3].textColor)
+            assert.are.same(ns.View.colors.grey, detail.modeHeaders[1].textColor)
+            local profit = detail.economics[4].values
+            assert.are.equal("+66s", plain(profit[1]:GetText()))
+            assert.are.equal("+66s", plain(profit[2]:GetText()))
+            assert.are.equal("+78s", plain(profit[3]:GetText()))
+            assert.are.equal("GameFontNormal", profit[3].font)
+            assert.are.equal("GameFontHighlightSmall", profit[1].font)
+            assert.are.equal(1, profit[3].alpha)
+            assert.are.equal(0.7, profit[1].alpha)
+        end)
+
+        it("hides the sale statistics when TSM has none and shows them when it does", function()
+            rowNamed("Copper Chain Belt"):Run("OnClick", "LeftButton")
+            assert.is_false(widgets().detail.sales:IsShown())
+            local market = _G.TSM_API.GetCustomPriceValue
+            _G.TSM_API.GetCustomPriceValue = function(formula, itemString)
+                if formula == "DBRegionSaleRate*1000" then
+                    return 481
+                elseif formula == "DBRegionSoldPerDay*1000" then
+                    return 4810
+                elseif formula == "DBRegionSaleAvg" or formula == "DBMinBuyout" then
+                    return 5319
+                end
+                return market(formula, itemString)
+            end
+            ns:Set("cut", 5)
+            assert.is_true(widgets().detail.sales:IsShown())
+            assert.are.equal("4.8 a day, 48%", widgets().detail.sales.rows[1].value:GetText())
         end)
 
         it("hides the profit rows an unsellable craft does not have", function()
@@ -503,7 +540,7 @@ describe("window", function()
         end)
 
         it("names the price source", function()
-            assert.are.equal("TSM (Market value)", widgets().detail.source:GetText())
+            assert.are.equal("Price source: TSM (Market value)", widgets().detail.source:GetText())
         end)
 
         it("opens the window on a reagent that is clicked", function()
@@ -668,6 +705,38 @@ describe("window", function()
             assert.are.equal("?", rowNamed("Copper Chain Belt").profit:GetText())
             button:Run("OnClick")
             assert.are.equal("Prices: Auto", button:GetText())
+        end)
+    end)
+
+    describe("cost mode selector", function()
+        before_each(function()
+            slash("Copper Ore")
+        end)
+
+        it("marks the active mode", function()
+            assert.is_true(widgets().modes.all.highlightLocked)
+            assert.is_false(widgets().modes.mine.highlightLocked)
+        end)
+
+        it("switches mode, re-ranks the list and saves the choice", function()
+            assert.are.equal("+13s", plain(rowNamed("Copper Chain Belt").profit:GetText()))
+            widgets().modes.buy:Run("OnClick")
+            assert.are.equal("buy", ns.db.settings.costMode)
+            assert.is_true(widgets().modes.buy.highlightLocked)
+            assert.is_false(widgets().modes.all.highlightLocked)
+            assert.are.equal("+11s", plain(rowNamed("Copper Chain Belt").profit:GetText()))
+        end)
+
+        it("explains each mode on hover", function()
+            widgets().modes.mine:Run("OnEnter")
+            assert.is_truthy(GameTooltip.lines[1].left:find("recipes your characters know", 1, true))
+        end)
+
+        it("drives the tooltip too", function()
+            widgets().modes.buy:Run("OnClick")
+            local lines = ns.View.TooltipLines(items.ORE, false)
+            assert.are.equal("Copper Chain Belt", lines[4].left)
+            assert.are.equal("+11s", plain(lines[4].right))
         end)
     end)
 

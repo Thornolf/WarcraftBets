@@ -135,6 +135,57 @@ describe("engine", function()
         end)
     end)
 
+    describe("cost with a limit on which recipes may be used", function()
+        local function limited(allowCraft)
+            return Engine.New({
+                index = index,
+                auction = function(item)
+                    return prices[item]
+                end,
+                vendor = function(item)
+                    return index.vendor[item]
+                end,
+                cut = 0.05,
+                depth = 3,
+                allowCraft = allowCraft,
+            })
+        end
+
+        it("buys everything when no recipe is allowed", function()
+            local cost = limited(function()
+                return false
+            end):Cost(BAR)
+            assert.are.equal(800, cost.cost)
+            assert.are.equal("auction", cost.source)
+            assert.is_nil(cost.craft)
+        end)
+
+        it("is unknown for an item that can only be crafted when its recipe is not allowed", function()
+            prices[TIN] = 400
+            assert.is_nil(limited(function()
+                return false
+            end):Cost(BRONZE).cost)
+        end)
+
+        it("crafts only the links of a chain whose recipes are allowed", function()
+            prices[TIN], prices[BRONZE] = 400, 900
+            local smeltBronzeOnly = limited(function(recipe)
+                return recipe.id == SMELT_BRONZE
+            end)
+            assert.are.equal(600, smeltBronzeOnly:Cost(BRONZE).cost)
+            assert.are.equal(500, engine():Cost(BRONZE).cost)
+        end)
+
+        it("still lists every use of an item", function()
+            local uses = limited(function()
+                return false
+            end):Uses(ORE)
+            local belt = use(uses, MAKE_BELT)
+            assert.are.equal(2, belt.step)
+            assert.are.equal(12000 - 600 - 4800, belt.profit)
+        end)
+    end)
+
     describe("profit of a recipe", function()
         it("matches the belt example of the spec", function()
             local profit = engine():Profit(index.byId[MAKE_BELT])

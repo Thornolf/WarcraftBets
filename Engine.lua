@@ -10,9 +10,12 @@ local DEPTH_SLOTS = 8
 --- Creates an engine over a recipe index. `auction` and `vendor` return the
 --- unit price of an item in copper or nil, `cut` is the auction house fee as
 --- a fraction, `depth` is how many crafting steps a chain may have.
+--- `allowCraft(recipe)` says whether a reagent may be costed as crafted with
+--- that recipe; without it every recipe may.
 function Engine.New(options)
     return setmetatable({
         index = options.index,
+        allowCraft = options.allowCraft,
         auction = options.auction,
         vendor = options.vendor,
         cut = options.cut,
@@ -52,8 +55,8 @@ local function cheapest(self, item, depthLeft, path)
     if depthLeft > 0 then
         path[item] = true
         for _, recipe in ipairs(self.index.byProduct[item] or {}) do
-            local total = 0
-            for _, reagent in ipairs(recipe.reagents) do
+            local total = (not self.allowCraft or self.allowCraft(recipe)) and 0 or nil
+            for _, reagent in ipairs(total and recipe.reagents or {}) do
                 local part, partTainted = cheapest(self, reagent.item, depthLeft - 1, path)
                 tainted = tainted or partTainted
                 if not part.cost then

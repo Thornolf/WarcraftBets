@@ -73,6 +73,40 @@ function Prices.ToggleFormulaPreset()
     ns:Set("tsmFormula", Prices.FormulaPreset() == "DBMarket" and "DBMinBuyout" or "DBMarket")
 end
 
+local function tsmValue(formula, itemID)
+    local api = TSM_API
+    if not (api and api.GetCustomPriceValue) then
+        return nil
+    end
+    local ok, value = pcall(api.GetCustomPriceValue, formula, "i:" .. itemID)
+    return ok and positive(value) or nil
+end
+
+local THOUSAND = 1000
+
+--- How an item really sells in the region, from TSM: `perDay` (units sold a
+--- day), `rate` (share of auctions that sell, 0 to 1), `average` (copper paid
+--- on average) and `cheapest` (lowest auction of the last scan, may be nil).
+--- Nil when TSM has no sale data for the item.
+function Prices.SaleStats(itemID)
+    -- TSM versions disagree on whether these two sources are already
+    -- multiplied by 1000, and some round formula results to whole numbers.
+    -- Asking for a thousand times the value survives rounding, and a sale
+    -- rate above 1 gives away the versions that had already multiplied.
+    local rate = tsmValue("DBRegionSaleRate*1000", itemID)
+    local perDay = tsmValue("DBRegionSoldPerDay*1000", itemID)
+    if not (rate and perDay) then
+        return nil
+    end
+    local scale = rate > THOUSAND and THOUSAND * THOUSAND or THOUSAND
+    return {
+        rate = rate / scale,
+        perDay = perDay / scale,
+        average = tsmValue("DBRegionSaleAvg", itemID),
+        cheapest = tsmValue("DBMinBuyout", itemID),
+    }
+end
+
 --- Whether the add-on behind a price source is loaded.
 function Prices.IsAvailable(source)
     if source == "tsm" then

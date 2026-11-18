@@ -10,6 +10,7 @@ local DEFAULT_SETTINGS = {
     tooltipCount = 2,
     tooltipShiftCount = 5,
     tooltipEnabled = true,
+    costMode = "mine",
 }
 
 local activeLocale = ns.locales[GetLocale()] or ns.locales.enUS

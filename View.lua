@@ -185,15 +185,59 @@ local function costText(amount)
     return amount and ns.Money.Format(amount) or ns.L.UNKNOWN_PRICE
 end
 
---- Everything the detail panel shows for one craft of the studied item.
-function View.Detail(use, item)
+local function colorize(text, color)
+    return ("|cff%02x%02x%02x%s|r"):format(color[1] * 255, color[2] * 255, color[3] * 255, text)
+end
+
+-- "buy 24s · craft 18s" for a reagent that can be crafted: the option the
+-- current mode uses is white, the other grey, and "craft" is green or red
+-- depending on whether one of the player's characters knows the recipe.
+local function reagentChoice(reagent, anyRecipe)
     local L, Money = ns.L, ns.Money
+    local chosen = reagent.entry
+    local buy = math.min(anyRecipe.auction or math.huge, anyRecipe.vendor or math.huge)
+    local known = ns.Analysis.KnownByAnyone(anyRecipe.recipe.id)
+    local crafted = chosen.source == "craft"
+    local parts = {}
+    if buy < math.huge then
+        local text = L.CHOICE_BUY .. " " .. Money.Format(buy * reagent.count)
+        table.insert(parts, colorize(text, crafted and GREY or WHITE))
+    end
+    local craft = colorize(L.CHOICE_CRAFT, known and STATE_GOOD or STATE_BAD)
+    local amount = colorize(Money.Format(anyRecipe.craft * reagent.count), crafted and WHITE or GREY)
+    table.insert(parts, craft .. " " .. amount)
+    return table.concat(parts, colorize("  ·  ", GREY))
+end
+
+local function salesBlock(product)
+    local stats = product and ns.Prices.SaleStats(product)
+    if not stats then
+        return nil
+    end
+    local L = ns.L
+    local perDay = ("%.1f"):format(stats.perDay):gsub("%.", L.DECIMAL_SEPARATOR)
+    local percent = math.floor(stats.rate * 100 + 0.5)
+    return {
+        { label = L.SALES_VOLUME, value = L.SALES_VOLUME_VALUE:format(perDay, percent) },
+        { label = L.SALES_AVERAGE, value = costText(stats.average) },
+        { label = L.SALES_CHEAPEST, value = costText(stats.cheapest) },
+    }
+end
+
+--- Everything the detail panel shows for one craft of the studied item:
+--- identity, how it sells, the profit in each cost mode side by side, and
+--- its reagents with the buy and craft prices.
+function View.Detail(use, item)
+    local L, Money, Analysis = ns.L, ns.Money, ns.Analysis
     local recipe = use.recipe
     local status = ns.Learned.Status(recipe)
     local profession = ns.Learned.ProfessionName(recipe.skill)
     local detail = {
         name = View.RecipeName(recipe),
         known = status.known,
+        sales = salesBlock(use.sellable and recipe.product),
+        modes = {},
+        activeMode = ns.db.settings.costMode,
         reagents = {},
         economics = {},
     }
@@ -204,40 +248,68 @@ function View.Detail(use, item)
     end
     detail.state, detail.stateColor = stateText(status)
 
+    local anyRecipeEngine = Analysis.Engine("all")
     for _, reagent in ipairs(use.reagents) do
         local entry = reagent.entry
+        local anyRecipe = anyRecipeEngine:Cost(reagent.item)
         local alternatives = {}
         for _, origin in ipairs({ "auction", "vendor", "craft" }) do
-            if entry[origin] then
-                local total = Money.Format(entry[origin] * reagent.count)
+            if anyRecipe[origin] then
+                local total = Money.Format(anyRecipe[origin] * reagent.count)
                 table.insert(alternatives, line(L["ORIGIN_" .. origin], total, WHITE, WHITE))
             end
         end
-        table.insert(detail.reagents, {
+        local row = {
             item = reagent.item,
             label = L.REAGENT_COUNT:format(ns.Compat.ItemName(reagent.item) or L.LOADING, reagent.count),
-            cost = costText(entry.cost and entry.cost * reagent.count),
-            origin = entry.source and L["ORIGIN_" .. entry.source] or nil,
             alternatives = alternatives,
-        })
+        }
+        if anyRecipe.craft then
+            row.cost = reagentChoice(reagent, anyRecipe)
+        else
+            row.cost = costText(entry.cost and entry.cost * reagent.count)
+            row.origin = entry.source and L["ORIGIN_" .. entry.source] or nil
+        end
+        table.insert(detail.reagents, row)
     end
 
-    local function add(label, value, color, strong)
-        local row = { label = label, value = value, color = color or WHITE, strong = strong }
+    local byMode = {}
+    for position, mode in ipairs(Analysis.MODES) do
+        detail.modes[position] = L["MODE_" .. mode]
+        byMode[position] = Analysis.Engine(mode):Profit(recipe)
+    end
+    local function add(label, read, strong)
+        local row = { label = label, values = {}, colors = {}, strong = strong }
+        for position, economics in ipairs(byMode) do
+            row.values[position], row.colors[position] = read(economics)
+            row.colors[position] = row.colors[position] or WHITE
+        end
         table.insert(detail.economics, row)
     end
     if use.sellable then
         local sale = recipe.yield > 1 and L.SALE_PRICE_YIELD:format(recipe.yield) or L.SALE_PRICE
-        add(sale, costText(use.revenue))
-        add(L.AUCTION_FEE:format(ns.db.settings.cut), use.fee and Money.Format(-use.fee) or L.UNKNOWN_PRICE)
-        add(L.REAGENT_COST, use.cost and Money.Format(-use.cost) or L.UNKNOWN_PRICE)
-        local text, color = View.ProfitText(use.profit)
-        add(L.NET_PROFIT, text, color, true)
-        text, color = View.ProfitText(use.profitPerUnit)
-        add(L.NET_PER_UNIT:format(ns.Compat.ItemName(item) or L.LOADING), text, color)
+        add(sale, function(economics)
+            return costText(economics.revenue)
+        end)
+        add(L.AUCTION_FEE:format(ns.db.settings.cut), function(economics)
+            return economics.fee and Money.Format(-economics.fee) or L.UNKNOWN_PRICE
+        end)
+        add(L.REAGENT_COST, function(economics)
+            return economics.cost and Money.Format(-economics.cost) or L.UNKNOWN_PRICE
+        end)
+        add(L.PROFIT_PER_CRAFT, function(economics)
+            return View.ProfitText(economics.profit)
+        end, true)
+        add(L.NET_PER_UNIT:format(ns.Compat.ItemName(item) or L.LOADING), function(economics)
+            return View.ProfitText(economics.profit and economics.profit / use.units)
+        end)
     else
-        add(L.NOT_SELLABLE, "", GREY)
-        add(L.REAGENT_COST, costText(use.cost))
+        add(L.NOT_SELLABLE, function()
+            return "", GREY
+        end)
+        add(L.REAGENT_COST, function(economics)
+            return costText(economics.cost)
+        end)
     end
     return detail
 end

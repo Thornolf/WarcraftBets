@@ -106,6 +106,10 @@ function widgetMethods:SetTexCoord(left, right, top, bottom)
     self.texCoord = { left, right, top, bottom }
 end
 
+function widgetMethods:SetAlpha(alpha)
+    self.alpha = alpha
+end
+
 function widgetMethods:SetDesaturated(desaturated)
     self.desaturated = desaturated
 end
@@ -366,7 +370,11 @@ function helpers.newGame(locale)
         end,
     }
     _G.TSM_API = {
-        GetCustomPriceValue = function(_, itemString)
+        -- Prices only: the fake has no regional sale data unless a spec adds some.
+        GetCustomPriceValue = function(formula, itemString)
+            if formula:find("^DBRegion") then
+                return nil
+            end
             return game.prices[tonumber(itemString:match("%d+"))]
         end,
     }
@@ -400,9 +408,18 @@ function helpers.newGame(locale)
 end
 
 --- Loads the whole add-on as the TOC lists it, with `data` standing in for
---- the generated recipe file, and fires ADDON_LOADED.
-function helpers.loadAddon(game, data)
+--- the generated recipe file, and fires ADDON_LOADED. Unless `settings` says
+--- otherwise, reagents are costed with any recipe: the fixture's expected
+--- profits assume the full crafting chain, whoever knows the recipes.
+function helpers.loadAddon(game, data, settings)
     local ns = game.ns
+    _G.WarcraftBetsDB = _G.WarcraftBetsDB or {}
+    _G.WarcraftBetsDB.settings = _G.WarcraftBetsDB.settings or {}
+    for key, value in pairs(settings or { costMode = "all" }) do
+        if _G.WarcraftBetsDB.settings[key] == nil then
+            _G.WarcraftBetsDB.settings[key] = value
+        end
+    end
     for _, path in ipairs(helpers.tocFiles()) do
         if path == "Data/Recipes.lua" and data then
             ns.RecipeData = data

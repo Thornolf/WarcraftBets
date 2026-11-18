@@ -34,6 +34,7 @@ describe("core", function()
         assert.are.equal(5, ns.db.settings.depth)
         assert.are.equal(5, ns.db.settings.cut)
         assert.are.equal("auto", ns.db.settings.priceSource)
+        assert.are.equal("mine", ns.db.settings.costMode)
     end)
 
     it("ignores other add-ons loading", function()

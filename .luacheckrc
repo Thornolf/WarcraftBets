@@ -75,3 +75,7 @@ files["spec"] = {
 files["Data/Recipes.lua"] = {
     max_line_length = false,
 }
+
+files["Locales"] = {
+    max_line_length = false,
+}

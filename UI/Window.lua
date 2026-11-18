@@ -10,7 +10,7 @@ local MARGIN = 14
 -- offsets after it are measured from the top of the page.
 local TAB_TOP, PAGE_TOP = 28, 56
 local HEADER_TOP, CONTENT_TOP = 4, 52
-local LIST_TOP = CONTENT_TOP + 46
+local LIST_TOP = CONTENT_TOP + 72
 local LIST_WIDTH = 330
 local TABS = { "item", "explorer", "favorites" }
 local RECENT_ROWS = 10
@@ -21,9 +21,12 @@ local VISIBLE_ROWS = 16
 local SCROLLBAR_WIDTH = 14
 local WHEEL_ROWS = 3
 local MAX_REAGENTS = 8
-local REAGENT_HEIGHT = 20
+local REAGENT_HEIGHT = 18
 local ECONOMICS_ROWS = 5
-local ECONOMICS_HEIGHT = 18
+local ECONOMICS_HEIGHT = 17
+local ECONOMICS_COLUMN = 104
+local SALES_ROWS = 3
+local SALES_HEIGHT = 15
 local NAME_REFRESH_SECONDS = 0.3
 local GREEN = { 0.12, 1, 0 }
 
@@ -138,6 +141,10 @@ end
 
 local PRICE_SOURCES = { "auto", "tsm", "auctionator" }
 
+local function hideTooltip()
+    GameTooltip:Hide()
+end
+
 local function buildHeader(parent, widgets)
     local slot = CreateFrame("Button", nil, parent)
     slot:SetSize(40, 40)
@@ -223,12 +230,38 @@ local function buildFilters(parent, widgets)
     end)
     widgets.filter = filter
 
+    local modeLabel = label(parent, "GameFontNormalSmall")
+    modeLabel:SetPoint("TOPLEFT", parent, "TOPLEFT", MARGIN + 6, -CONTENT_TOP - 31)
+    modeLabel:SetText(ns.L.MODE_LABEL)
+    widgets.modes = {}
+    local previous
+    for _, mode in ipairs(ns.Analysis.MODES) do
+        local button = ns.Compat.CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+        button:SetSize(90, 20)
+        if previous then
+            button:SetPoint("LEFT", previous, "RIGHT", 2, 0)
+        else
+            button:SetPoint("TOPLEFT", parent, "TOPLEFT", MARGIN + 52, -CONTENT_TOP - 26)
+        end
+        button:SetText(ns.L["MODE_" .. mode])
+        button:SetScript("OnClick", function()
+            ns:Set("costMode", mode)
+        end)
+        button:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:AddLine(ns.L["MODE_HINT_" .. mode], 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+        button:SetScript("OnLeave", hideTooltip)
+        widgets.modes[mode], previous = button, button
+    end
+
     local craftColumn = label(parent, "GameFontDisableSmall")
-    craftColumn:SetPoint("TOPLEFT", parent, "TOPLEFT", MARGIN + 6, -CONTENT_TOP - 28)
+    craftColumn:SetPoint("TOPLEFT", parent, "TOPLEFT", MARGIN + 6, -CONTENT_TOP - 54)
     craftColumn:SetText(ns.L.COLUMN_CRAFT)
     widgets.profitColumn = label(parent, "GameFontDisableSmall", "RIGHT")
     local right = MARGIN + LIST_WIDTH - SCROLLBAR_WIDTH - 8
-    widgets.profitColumn:SetPoint("TOPRIGHT", parent, "TOPLEFT", right, -CONTENT_TOP - 28)
+    widgets.profitColumn:SetPoint("TOPRIGHT", parent, "TOPLEFT", right, -CONTENT_TOP - 54)
 end
 
 local function showRowTooltip(row)
@@ -236,10 +269,6 @@ local function showRowTooltip(row)
     if product then
         ns.Compat.ShowItemTooltip(row, product)
     end
-end
-
-local function hideTooltip()
-    GameTooltip:Hide()
 end
 
 local function buildRow(list, position)
@@ -351,11 +380,59 @@ local function buildDetail(parent, widgets)
     detail.state:SetPoint("TOPLEFT", detail.skill, "BOTTOMLEFT", 0, -3)
     detail.state:SetPoint("RIGHT", detail, "RIGHT", 0, 0)
 
-    local top = 56
+    local top = 54
+    detail.sales = CreateFrame("Frame", nil, detail)
+    detail.sales:SetPoint("TOPLEFT", detail, "TOPLEFT", 0, -top)
+    detail.sales:SetPoint("RIGHT", detail, "RIGHT", 0, 0)
+    detail.sales:SetHeight(18 + SALES_ROWS * SALES_HEIGHT)
+    local salesTitle = label(detail.sales, "GameFontNormal")
+    salesTitle:SetPoint("TOPLEFT", detail.sales, "TOPLEFT", 0, 0)
+    salesTitle:SetText(ns.L.SALES_TITLE)
+    detail.sales.rows = {}
+    for position = 1, SALES_ROWS do
+        local row = {}
+        local offset = -18 - (position - 1) * SALES_HEIGHT
+        row.label = label(detail.sales, "GameFontHighlightSmall")
+        row.label:SetPoint("TOPLEFT", detail.sales, "TOPLEFT", 0, offset)
+        row.value = label(detail.sales, "GameFontHighlightSmall", "RIGHT")
+        row.value:SetPoint("TOPRIGHT", detail.sales, "TOPRIGHT", -2, offset)
+        detail.sales.rows[position] = row
+    end
+    top = top + 18 + SALES_ROWS * SALES_HEIGHT + 8
+
+    local economicsTitle = label(detail, "GameFontNormal")
+    economicsTitle:SetPoint("TOPLEFT", detail, "TOPLEFT", 0, -top)
+    economicsTitle:SetText(ns.L.PROFITABILITY)
+    detail.modeHeaders = {}
+    for position = 1, #ns.Analysis.MODES do
+        local header = label(detail, "GameFontHighlightSmall", "RIGHT")
+        local right = -2 - (#ns.Analysis.MODES - position) * ECONOMICS_COLUMN
+        header:SetPoint("TOPRIGHT", detail, "TOPRIGHT", right, -top - 2)
+        detail.modeHeaders[position] = header
+    end
+    top = top + 19
+
+    detail.economics = {}
+    for position = 1, ECONOMICS_ROWS do
+        local row = { values = {} }
+        local offset = -top - (position - 1) * ECONOMICS_HEIGHT
+        row.label = label(detail, "GameFontHighlightSmall")
+        row.label:SetPoint("TOPLEFT", detail, "TOPLEFT", 0, offset)
+        row.label:SetPoint("RIGHT", detail, "RIGHT", -#ns.Analysis.MODES * ECONOMICS_COLUMN, 0)
+        for column = 1, #ns.Analysis.MODES do
+            local value = label(detail, "GameFontHighlightSmall", "RIGHT")
+            local right = -2 - (#ns.Analysis.MODES - column) * ECONOMICS_COLUMN
+            value:SetPoint("TOPRIGHT", detail, "TOPRIGHT", right, offset)
+            row.values[column] = value
+        end
+        detail.economics[position] = row
+    end
+    top = top + ECONOMICS_ROWS * ECONOMICS_HEIGHT + 8
+
     local reagentsTitle = label(detail, "GameFontNormal")
     reagentsTitle:SetPoint("TOPLEFT", detail, "TOPLEFT", 0, -top)
-    reagentsTitle:SetText(ns.L.REAGENTS)
-    top = top + 20
+    reagentsTitle:SetText(ns.L.REAGENTS_CHOICE)
+    top = top + 19
 
     detail.reagents = {}
     for position = 1, MAX_REAGENTS do
@@ -365,11 +442,11 @@ local function buildDetail(parent, widgets)
         row:SetPoint("RIGHT", detail, "RIGHT", 0, 0)
         row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
         row.icon = row:CreateTexture(nil, "ARTWORK")
-        row.icon:SetSize(16, 16)
+        row.icon:SetSize(15, 15)
         row.icon:SetPoint("LEFT", row, "LEFT", 2, 0)
         row.cost = label(row, "GameFontHighlightSmall", "RIGHT")
         row.cost:SetPoint("RIGHT", row, "RIGHT", -2, 0)
-        row.label = label(row, "GameFontHighlight")
+        row.label = label(row, "GameFontHighlightSmall")
         row.label:SetPoint("LEFT", row.icon, "RIGHT", 6, 0)
         row.label:SetPoint("RIGHT", row.cost, "LEFT", -6, 0)
         row:SetScript("OnClick", function(self)
@@ -379,29 +456,10 @@ local function buildDetail(parent, widgets)
         row:SetScript("OnLeave", hideTooltip)
         detail.reagents[position] = row
     end
-    top = top + MAX_REAGENTS * REAGENT_HEIGHT + 10
+    top = top + MAX_REAGENTS * REAGENT_HEIGHT + 6
 
-    local economicsTitle = label(detail, "GameFontNormal")
-    economicsTitle:SetPoint("TOPLEFT", detail, "TOPLEFT", 0, -top)
-    economicsTitle:SetText(ns.L.PROFITABILITY)
-    top = top + 20
-
-    detail.economics = {}
-    for position = 1, ECONOMICS_ROWS do
-        local row = {}
-        row.label = label(detail, "GameFontHighlightSmall")
-        row.label:SetPoint("TOPLEFT", detail, "TOPLEFT", 0, -top - (position - 1) * ECONOMICS_HEIGHT)
-        row.value = label(detail, "GameFontHighlightSmall", "RIGHT")
-        row.value:SetPoint("TOPRIGHT", detail, "TOPRIGHT", -2, -top - (position - 1) * ECONOMICS_HEIGHT)
-        detail.economics[position] = row
-    end
-    top = top + ECONOMICS_ROWS * ECONOMICS_HEIGHT + 10
-
-    local sourceTitle = label(detail, "GameFontNormal")
-    sourceTitle:SetPoint("TOPLEFT", detail, "TOPLEFT", 0, -top)
-    sourceTitle:SetText(ns.L.PRICE_SOURCE)
-    detail.source = label(detail, "GameFontHighlightSmall")
-    detail.source:SetPoint("TOPLEFT", sourceTitle, "BOTTOMLEFT", 0, -4)
+    detail.source = label(detail, "GameFontDisableSmall")
+    detail.source:SetPoint("TOPLEFT", detail, "TOPLEFT", 0, -top)
     detail.source:SetPoint("RIGHT", detail, "RIGHT", 0, 0)
 
     detail.linkButton = ns.Compat.CreateFrame("Button", nil, detail, "UIPanelButtonTemplate")
@@ -600,6 +658,13 @@ local function drawHeader(widgets)
     widgets.formulaButton:SetText(ns.View.FormulaLabel())
     widgets.formulaButton:SetShown(ns.Prices.IsAvailable("tsm"))
     widgets.filter:SetText(L["FILTER_" .. state.filter])
+    for mode, button in pairs(widgets.modes) do
+        if mode == ns.db.settings.costMode then
+            button:LockHighlight()
+        else
+            button:UnlockHighlight()
+        end
+    end
     widgets.itemStar:SetShown(item ~= nil)
     if not item then
         widgets.slot.icon:SetTexture("Interface\\PaperDoll\\UI-Backpack-EmptySlot")
@@ -697,22 +762,41 @@ local function drawDetail(widgets, selectedRow)
         end
     end
 
-    for position, row in ipairs(detail.economics) do
-        local entry = view.economics[position]
-        row.label:SetShown(entry ~= nil)
-        row.value:SetShown(entry ~= nil)
+    detail.sales:SetShown(view.sales ~= nil)
+    for position, row in ipairs(detail.sales.rows) do
+        local entry = view.sales and view.sales[position]
         if entry then
-            local font = entry.strong and "GameFontNormal" or "GameFontHighlightSmall"
-            row.label:SetFontObject(font)
-            row.value:SetFontObject(font)
             row.label:SetText(entry.label)
-            row.label:SetTextColor(unpack(colors.white))
             row.value:SetText(entry.value)
-            row.value:SetTextColor(unpack(entry.color))
         end
     end
 
-    detail.source:SetText(ns.View.PriceSourceText())
+    for position, header in ipairs(detail.modeHeaders) do
+        local active = ns.Analysis.MODES[position] == view.activeMode
+        header:SetText(view.modes[position])
+        header:SetTextColor(unpack(active and colors.title or colors.grey))
+    end
+    for position, row in ipairs(detail.economics) do
+        local entry = view.economics[position]
+        row.label:SetShown(entry ~= nil)
+        for column, value in ipairs(row.values) do
+            value:SetShown(entry ~= nil)
+            if entry then
+                local active = ns.Analysis.MODES[column] == view.activeMode
+                value:SetFontObject(entry.strong and active and "GameFontNormal" or "GameFontHighlightSmall")
+                value:SetText(entry.values[column])
+                value:SetTextColor(unpack(entry.colors[column]))
+                value:SetAlpha(active and 1 or 0.7)
+            end
+        end
+        if entry then
+            row.label:SetFontObject(entry.strong and "GameFontNormal" or "GameFontHighlightSmall")
+            row.label:SetText(entry.label)
+            row.label:SetTextColor(unpack(colors.white))
+        end
+    end
+
+    detail.source:SetText(ns.L.PRICE_SOURCE:format(ns.View.PriceSourceText()))
     detail.use = use
     detail.shopButton:SetShown(ns.Shopping.IsAvailable())
 end
